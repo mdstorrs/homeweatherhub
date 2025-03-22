@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Weather Hub - Casa di Storrs</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">    
+  </head>
+  <body>
+
+    <div id="mySidebar" class="sidebar">
+      <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+      <a href="index.html"><i class="fas fa-satellite-dish"></i><span>Stations</span></a>
+      <a href="current.html" id="currentLink" class="conditional-link"><i class="fas fa-thermometer-half"></i><span>Current</span></a>
+      <a href="history.html" id="historyLink" class="conditional-link"><i class="fas fa-history"></i><span>History</span></a>
+      <div id="settings">
+          <a href="settings.html"><i class="fas fa-cog"></i><span>Settings</span></a>
+      </div>
+    </div>
+
+    <div id="main">
+
+      <button class="openbtn" onclick="openNav()">☰</button>
+   
+      <div class="cs-header-container">
+        <h1>Home Weather Hub</h1>
+      </div>
+
+      <div class="js-station-current">
+        <div class="cs-section-div">
+          <h2 class="js-station-name">Weather Station</h2>
+          <h3 class="js-status-label">Loading...</h3>
+          <h4 class="js-last-updated" id="lastUpdatedHeader">...</h4>
+        </div>
+      </div>   
+      
+      <div class="cs-bottom-controls">
+        <button class="cs-current-button" id="historyButton">History ></button>
+      </div>
+
+    </div>    
+
+    <script type="module" src="scripts/main.js"></script>
+    <script type="module" src="scripts/current.js"></script>
+
+  </body>
+</html>

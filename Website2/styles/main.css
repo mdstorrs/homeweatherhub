@@ -1,0 +1,345 @@
+:root {
+  --main-backcolor: #f8f8f8; /* Light mode defaults */
+  --secondary-backcolor: #fff;
+  --hover-backcolor: #f5f9ef;
+  --active-backcolor: #e5e9df;
+  --main-forecolor: #444;
+  --secondary-forecolor: #007ACC;
+  --light-forecolor: #888;
+  --title-Color: rgb(243, 161, 9);
+  --error: rgb(194, 31, 31);
+  --button-color: #007ACC;
+  --button-color-active: #008ADC;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --main-backcolor: #252525; /* Dark mode overrides */
+    --secondary-backcolor: #333;
+    --hover-backcolor: #444;
+    --active-backcolor: #555;
+    --main-forecolor: white;
+    --secondary-forecolor: #007ACC;
+    --light-forecolor: #888;
+    --title-Color: rgb(243, 161, 9);
+    --error: rgb(194, 31, 31);
+  }
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--main-backcolor);
+  color: var(--main-forecolor);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.cs-header-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+h1 {
+  text-align: center;
+  background-color: var(--secondary-backcolor);
+  color: var(--title-Color);
+  padding: 10px;
+  margin: 10px auto;
+  margin-bottom: 5px;
+  min-width: 300px;
+  max-width: 500px;
+  width: 90%;
+  border-radius: 6px;
+}
+
+h2 {
+  color: var(--secondary-forecolor);
+  margin: 5px;
+}
+
+h3 {
+  margin: 5px;
+  font-weight: bold;
+}
+
+h4 {
+  color: var(--light-forecolor);
+  font-size: 7pt;
+}
+
+
+h5 {
+  font-size: 5pt;
+}
+
+p {
+  color: var(--main-forecolor);
+  margin: 3px;
+}
+
+.disabled-link {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.js-station-list {
+  width: 100%; /* Take up the full width */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center buttons horizontally */
+  flex-grow: 1; /* Allow to grow and push footer down */
+}
+
+.main-menu-button {
+  border-style: none;
+  background-color: var(--secondary-backcolor);
+  color: var(--main-forecolor);
+  padding: 10px;
+  margin: 5px auto;
+  text-align: center;
+  min-width: 300px; /* Minimum width */
+  max-width: 500px; /* Maximum width */
+  width: 90%; /* Width as a percentage of the button container */
+  border-radius: 6px;
+}
+
+.main-menu-button:hover {
+  background-color: var(--hover-backcolor);
+}
+
+.main-menu-button:active {
+  background-color: var(--active-backcolor);
+}
+
+.cs-bottom-controls {
+  text-align: center;
+  padding: 12px 35px 25px 35px;
+  margin: 5px auto;
+  min-width: 300px;
+  max-width: 500px;
+  width: 90%;
+  border-radius: 6px;
+  display: flex; 
+}
+
+.cs-section-div {
+  text-align: center;
+  background-color: var(--secondary-backcolor);
+  padding: 12px 35px 25px 35px;
+  margin: 5px auto;
+  min-width: 300px;
+  max-width: 500px;
+  width: 90%;
+  border-radius: 6px;
+}
+
+.cs-current-button {
+  background-color: var(--button-color);
+  color: white;
+  border: 1px solid #002b49;
+  border-radius: 4px;
+  height: 40px;
+  width: 50%;
+  margin: 0px 20% 0px 20%;
+}
+
+.cs-current-button:hover {
+  cursor: pointer;
+  color: gold;
+}
+
+.cs-current-button:active {
+  background-color: var(--button-color-active);
+}
+
+.cs-history-button {
+  background-color: var(--button-color);
+  color: white;
+  border: 1px solid #002b49;
+  border-radius: 4px;
+  max-width: 200;
+  height: 40px;
+  width: 20%;
+  margin: 0px;
+}
+
+.cs-history-button:hover {
+  cursor: pointer;
+  color: gold;
+}
+
+.cs-history-button:active {
+  background-color: var(--button-color-active);
+}
+
+.cs-history-combo {
+  border-radius: 4px;
+  height: 40px;
+  width: 50%;
+  margin: 0px 5% 0px 5%;
+  font-size: large;
+}
+
+.section-data{
+  display: flex;
+  flex-direction: column; /* Stack RATE and ACCUM vertically */
+  gap: 12px; /* Adds spacing between items */
+}
+
+.data-line {
+  display: flex;
+  justify-content: space-between; /* Push label left & value right */
+  width: 100%;
+}
+
+.section-header-line {
+  text-align: left;
+  color: var(--secondary-forecolor);
+  padding-top: 15px;
+  padding-bottom: 5px;
+  width: 50%;
+}
+
+.section-header-line-right {
+  text-align: right;
+  padding-top: 15px;
+  padding-bottom: 5px;
+  color: var(--secondary-forecolor);
+}
+
+.label {
+  text-align: left;
+  width: 50%;
+}
+
+.value {
+  text-align: right;
+  width: 20%;
+}
+
+.cs-temp {
+  font-size: 4em;
+  text-align: center;
+  margin-top: 15px;
+}
+
+.cs-temp-symbol {
+  font-size: 3em;
+  color: var(--light-forecolor);
+  text-align: left;
+  vertical-align: top;
+}
+
+.cs-temp-unit {
+  font-size: 2em;
+  color: var(--light-forecolor);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+
+/* Slide-out menu styles */
+.sidebar {
+  height: 100%;
+  width: 80px; /* Initial closed width */
+  position: fixed;
+  z-index: 1000; /* Ensure it's on top */
+  top: 0;
+  left: 0;
+  background-color: var(--secondary-backcolor);
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 60px;
+  color: white;
+}
+
+.sidebar a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 18px;
+  color: var(--main-forecolor);
+  display: block;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar a i {
+  margin-right: 10px;
+}
+
+.sidebar .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
+.openbtn {
+  font-size: 20px;
+  cursor: pointer;
+  background-color: var(--secondary-backcolor);
+  color: var(--main-forecolor);
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+  border: none;
+  position: fixed;
+  top: 10px;
+  left: 20px;
+  z-index: 1001;
+  display: flex; /* Use flexbox for alignment */
+  align-items: center; /* Center vertically */
+  justify-content: center; /* Center horizontally */
+  width: 40px; /* Set a fixed width */
+  height: 40px; /* Set a fixed height */
+}
+
+.openbtn:hover {
+  background-color: var(--hover-backcolor);
+}
+
+#main {
+  transition: filter 0.5s; /* Add transition for overlay effect */
+  margin-left: 80px;
+}
+
+.sidebar.open {
+  width: 250px; /* Expanded width */
+}
+
+#main.open {
+  filter: brightness(0.5); /* Dim main content when open */
+}
+
+.sidebar a span {
+  display: none; /* Hide text by default */
+}
+
+.sidebar.open a span {
+  display: inline; /* Show text when open */
+}
+
+#settings {
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+}
+
+#settings a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 18px;
+  color: var(--main-forecolor);
+  display: block;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+}

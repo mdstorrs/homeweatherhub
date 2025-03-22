@@ -1,0 +1,62 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="ws.Master.cs" Inherits="Home_Weather_Hub.ws" %>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head runat="server">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-24996411-6"></script>
+
+    <script>
+
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+            gtag('config', 'UA-24996411-6');
+
+    </script>
+
+    <title>Home Weather Hub</title>
+   	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" href="/css/ws.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+
+</head>
+
+<body>
+    <form id="form1" runat="server">
+        <div>
+            <asp:Label ID="lblError" runat="server" CssClass="error" Text="Error" Visible="False"></asp:Label>
+            <div id="header">
+                <div id="threelines">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <p></p>
+                </div>
+                <div id="title">
+                    <p>T</p>
+                </div>
+                <div id="refreshicon">
+                    <p>R</p>
+                </div>
+            </div>
+            <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+            </asp:ContentPlaceHolder>
+            <div id="footer">
+                <ul>
+                    <li><a href="/Privacy.aspx">Privacy</a></li>
+                    <li><a href="/Terms.aspx">Terms</a></li>
+                </ul>
+                <p id="copyright">© 2021 Home Weather Hub</p>
+            </div>
+        </div>
+    </form>
+
+</body>
+
+</html>

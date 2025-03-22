@@ -1,0 +1,453 @@
+﻿body {
+    margin: 0;
+    font-family: "Lucida Grande","Tahoma","Sans-Serif";
+    background: #eee;
+    min-width: 325px;
+    text-align: center;
+    margin: auto;
+    padding: 10px;
+}
+
+h1 {
+    font-size: 1.6em;
+    color: midnightblue;
+    text-align: left;
+}
+
+
+h2 {
+    font-size: 1.2em;
+    color: royalblue;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+h3 {
+    font-size: 0.9em;
+    color: black;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+h4 {
+    margin-top: 40px;
+    margin-bottom: 0px;
+    font-size: 0.9em;
+    color: darkred;
+}
+
+h5 {
+    font-size: 0.8em;
+}
+
+img {
+    border: 0;
+}
+
+a {
+    color: blue;
+    text-decoration: none;
+}
+
+    a:hover {
+        color: orange;
+        text-decoration: underline;
+    }
+
+#account-details {
+    border: 0px solid #333;
+}
+
+#account-entry {
+    margin: 20px auto 20px auto;
+    width: 300px;
+    border: 1px solid #777;
+    border-radius: 5px;
+    background-color: white;
+    padding: 30px 0px;
+    text-align: center;
+    min-height: 450px;
+}
+
+.form-control {
+    font-size: 1.1em;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    max-width: 240px;
+    height: auto;
+    padding: 10px;
+    width: 75%;
+}
+
+.aspbutton {
+    color: white;
+    background-color: #0077c8;
+    border: 1px solid #002b49;
+    margin: 0px auto;
+    border-radius: 4px;
+    font-size: 0.9em;
+    max-width: 200px;
+    display: inline-block;
+    height: 40px;
+}
+
+.selectedButton {
+    background-color: #a5e6a4;
+    color: black;
+}
+
+.removeButton {
+    background-color: #420707;
+    color: white;
+}
+
+.aspbutton:hover {
+    cursor: pointer;
+    background-color: #4797e1;
+    color: gold;
+    text-decoration: none;
+}
+
+.online {
+    color: dimgray;
+    font-size: 0.8em;
+}
+
+.offline {
+    color: darkred;
+    font-size: 0.8em;
+}
+
+.content {
+    margin: 20px auto 20px auto;
+    width: 300px;
+    border: 1px solid #777;
+    border-radius: 5px;
+    background-color: white;
+    padding: 10px 0px 10px 0px;
+    text-align: center;
+}
+
+.panelContent {
+    margin: 20px auto 20px auto;
+    width: 300px;
+    border: 1px solid #777;
+    border-radius: 5px;
+    background-color: white;
+    padding: 10px;
+    text-align: center;
+    min-height: 450px;
+}
+
+#header {
+    width: 300px;
+    height: 30px;
+    margin: 0 auto 0 auto;
+    padding: 0px;
+}
+
+#threelines {
+    width: 30px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    display: inline-block;
+    text-align: left;
+    background-color: lavender;
+}
+
+    #threelines div {
+        width: 20px;
+        height: 3px;
+        background-color: cornflowerblue;
+        margin: 3px 0;
+    }
+
+#title {
+    width: 160px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    display: inline-block;
+    text-align: left;
+    background-color: lightblue;
+}
+
+#refreshicon {
+    width: 30px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    display: inline-block;
+    text-align: left;
+    background-color: yellow;
+}
+
+#footer {
+    border-left: 0px;
+    border-right: 0px;
+}
+
+    #footer ul {
+        text-align: center;
+        list-style-type: none;
+        margin: 5px 40px 5px 0px;
+    }
+
+    #footer li {
+        color: blue;
+        font-size: 0.6em;
+        display: inline-block;
+        margin-left: 5px;
+        margin-right: 5px;
+        margin-bottom: 0px;
+    }
+
+    #footer a {
+        color: blue;
+        text-decoration: none;
+        text-transform: uppercase;
+        padding: 0px;
+    }
+
+        #footer a:hover {
+            color: darkorange;
+            text-decoration: underline;
+            margin-bottom: 0px;
+            padding: 0px;
+        }
+
+#copyright {
+    font-size: 0.6em;
+    color: dimgray;
+    text-align: center;
+    margin: 0px 0px 10px 0px;
+    padding: 0px;
+}
+
+.updated {
+    margin: 0px auto 10px auto;
+    font-size: 0.8em;
+}
+
+.table {
+    width: auto;
+    height: inherit;
+    text-align: center;
+    /*min-height: 300px;*/
+    padding-bottom: 20px;
+    margin-top: 20px;
+}
+
+    .table p {
+        display: block;
+        height: auto;
+        width: 250px;
+        font-size: 0.8em;
+        padding: 0px;
+        margin: auto;
+        text-align: center;
+    }
+
+.rowHeader {
+    display: inline-block;
+    width: 110px;
+    height: inherit;
+    text-align: left;
+    margin: 0px;
+    padding: 0px;
+    color: dimgray;
+    text-transform: uppercase;
+}
+
+.rowHeader80 {
+    display: inline-block;
+    width: 80px;
+    height: inherit;
+    text-align: left;
+    margin: 0px;
+    padding: 0px;
+    color: dimgray;
+    text-transform: uppercase;
+}
+
+
+.lightbluetext {
+    color: royalblue;
+}
+
+.darkredtext {
+    color: darkred;
+}
+
+.midgreentext {
+    color: darkgreen;
+}
+
+.darkorangetext {
+    color: chocolate;
+}
+
+.rowValue {
+    display: inline-block;
+    width: 100px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    color: navy;
+    text-align: right;
+}
+
+.rowValue125 {
+    display: inline-block;
+    width: 125px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    color: navy;
+    text-align: right;
+}
+
+.rowValueHalf {
+    display: inline-block;
+    width: 48px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    color: navy;
+    text-align: right;
+}
+
+.rowValueHalfHeader {
+    display: inline-block;
+    width: 48px;
+    height: inherit;
+    margin: 0px;
+    padding: 0px;
+    color: dimgray;
+    text-align: right;
+}
+
+
+.lightgreen {
+    background-color: honeydew;
+}
+
+.lightpink {
+    background-color: mistyrose;
+}
+
+.lightyellow {
+    background-color: blanchedalmond;
+}
+
+.lightblue {
+    background-color: lightcyan;
+}
+
+.error {
+    display: block;
+    width: auto;
+    background-color: lightpink;
+    color: maroon;
+    text-align: center;
+    padding: 5px;
+    display: block;
+}
+
+.maintemp {
+    font-size: 4em;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.maintempdegree {
+    font-size: 3em;
+    color: dimgray;
+    text-align: left;
+    vertical-align: top;
+}
+
+.maintempunit {
+    font-size: 2em;
+    color: black;
+    text-align: left;
+    vertical-align: baseline;
+}
+
+.mainhumidty {
+    font-size: 0.8em;
+    color: dimgray;
+    text-align: center;
+    vertical-align: top;
+    margin-top: -25px;
+    text-transform: uppercase;
+}
+
+.fineprint {
+    font-size: 0.8em;
+    color: royalblue;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.tinylink {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.6em;
+}
+
+.ddlstyle {
+    border: 1px solid #777;
+    border-radius: 5px;
+    font-size: 1.1em;
+    color: black;
+    height: 40px;
+}
+
+@media only screen and (max-width: 450px) {
+
+    /*#products {
+        text-align: center;
+        margin: 0px;
+        padding: 5px;
+    }
+
+    .product {
+        margin: 2px;
+    }*/
+
+}
+
+
+/* Popups  */
+
+#cover {
+    display: none;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    /*background: gray;
+    filter: alpha(Opacity = 50);
+    opacity: 0.5;
+    -moz-opacity: 0.5;
+    -khtml-opacity: 0.5*/
+}
+
+/* 250px wide 300px hight - centered */
+#dialog {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 250px; /* adjust as per your needs */
+    height: 300px; /* adjust as per your needs */
+    margin-left: -128px; /* negative half of width above */
+    margin-top: -200px; /* negative half of height above */
+    z-index: 100;
+    background: white;
+    padding: 2px;
+    border: 1px solid gray
+}

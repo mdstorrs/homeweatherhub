@@ -1,0 +1,28 @@
+Array
+(
+    [PASSKEY] => 64342F32A039AFA8CACC2061B1A77938
+    [stationtype] => EasyWeatherV1.5.9
+    [dateutc] => 2021-06-19 21:45:01
+    [tempinf] => 61.3
+    [humidityin] => 54
+    [baromrelin] => 30.027
+    [baromabsin] => 29.782
+    [tempf] => 55.6
+    [humidity] => 71
+    [winddir] => 291
+    [windspeedmph] => 6.9
+    [windgustmph] => 10.3
+    [maxdailygust] => 12.5
+    [rainratein] => 0.000
+    [eventrainin] => 0.000
+    [hourlyrainin] => 0.000
+    [dailyrainin] => 0.000
+    [weeklyrainin] => 0.000
+    [monthlyrainin] => 1.020
+    [totalrainin] => 87.429
+    [solarradiation] => 93.22
+    [uv] => 0
+    [wh65batt] => 0
+    [freq] => 433M
+    [model] => WS2900C_V2.01.08
+)

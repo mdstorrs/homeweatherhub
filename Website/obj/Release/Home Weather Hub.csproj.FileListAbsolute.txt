@@ -1,0 +1,59 @@
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\Home Weather Hub.dll.config
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\Home Weather Hub.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\Home Weather Hub.pdb
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\csc.exe
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\csc.exe.config
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\csc.rsp
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\csi.exe
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\csi.exe.config
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\csi.rsp
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.Build.Tasks.CodeAnalysis.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.CodeAnalysis.CSharp.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.CodeAnalysis.CSharp.Scripting.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.CodeAnalysis.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.CodeAnalysis.Scripting.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.CodeAnalysis.VisualBasic.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.CSharp.Core.targets
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.DiaSymReader.Native.amd64.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.DiaSymReader.Native.x86.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.Managed.Core.targets
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.VisualBasic.Core.targets
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\Microsoft.Win32.Primitives.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.AppContext.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Collections.Immutable.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Console.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Diagnostics.DiagnosticSource.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Diagnostics.FileVersionInfo.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Diagnostics.StackTrace.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Globalization.Calendars.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.IO.Compression.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.IO.Compression.ZipFile.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.IO.FileSystem.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.IO.FileSystem.Primitives.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Net.Http.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Net.Sockets.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Reflection.Metadata.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Runtime.InteropServices.RuntimeInformation.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Security.Cryptography.Algorithms.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Security.Cryptography.Encoding.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Security.Cryptography.Primitives.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Security.Cryptography.X509Certificates.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Text.Encoding.CodePages.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Threading.Tasks.Extensions.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.ValueTuple.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Xml.ReaderWriter.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Xml.XmlDocument.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Xml.XPath.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\System.Xml.XPath.XDocument.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\vbc.exe
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\vbc.exe.config
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\vbc.rsp
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\VBCSCompiler.exe
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\roslyn\VBCSCompiler.exe.config
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\bin\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.xml
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\obj\Release\Home Weather Hub.csprojAssemblyReference.cache
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\obj\Release\Home Weather Hub.csproj.CoreCompileInputs.cache
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\obj\Release\Home Weather Hub.csproj.CopyComplete
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\obj\Release\Home Weather Hub.dll
+W:\Storrs ASP\Home Weather Hub\Home Weather Hub\obj\Release\Home Weather Hub.pdb

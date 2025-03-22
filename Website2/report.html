@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Weather Hub - Stations</title>
+  </head>
+  <body>
+
+    <form id="myForm">
+      <input type="text" name="PASSKEY" value="somePassKey">
+      <input type="text" name="stationtype" value="someStationType">
+      <button type="submit">Submit</button>
+    </form>
+    
+    <script>
+      document.getElementById('myForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission
+    
+        const formData = new FormData(this);
+        const passKey = formData.get('PASSKEY');
+        const stationtype = formData.get('stationtype');
+
+        consol.log(formData);
+
+        if (passKey) {
+          console.log('PASSKEY:', passKey);
+        }
+    
+        if (stationtype) {
+          console.log('stationtype:', stationtype);
+        }
+    
+        // ... your logic ...
+    
+        // If you need to send the data to a server, you can use fetch or XMLHttpRequest
+        /*
+        fetch('/your-api-endpoint', {
+          method: 'POST',
+          body: formData,
+        })
+        .then(response => response.text())
+        .then(data => console.log(data));
+        */
+    
+      });
+    </script>
+
+  </body>
+
+</html>

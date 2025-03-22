@@ -1,0 +1,20 @@
+{
+  "Version": 1,
+  "Hash": "6fDIPK6rvaQ+XHBXIEaDAePjXoh+6y7QMR/T6swN3Jk=",
+  "Source": "api",
+  "BasePath": "_content/api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "api\\wwwroot",
+      "Source": "api",
+      "ContentRoot": "C:\\Users\\MichaelStorrs\\source\\repos\\Home Weather Hub Solution\\api\\wwwroot\\",
+      "BasePath": "_content/api",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [],
+  "Endpoints": []
+}
