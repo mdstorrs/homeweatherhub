@@ -332,6 +332,7 @@ namespace api.Business
                     string command = @"
                         SELECT Id, StationName, Suburb, State, Country, Latitude, Longitude
                         FROM WSStations WITH(NOLOCK)
+                        WHERE UserID > 0
                         ORDER BY StationName
                         OFFSET @Skip ROWS FETCH NEXT @StationsPerPage ROWS ONLY;";
 
@@ -340,7 +341,7 @@ namespace api.Business
                         command = @"
                         SELECT Id, StationName, Suburb, State, Country, Latitude, Longitude
                         FROM WSStations WITH(NOLOCK)
-                        WHERE StationName LIKE @Filter
+                        WHERE UserID > 0 AND StationName LIKE @Filter
                         ORDER BY StationName
                         OFFSET @Skip ROWS FETCH NEXT @StationsPerPage ROWS ONLY;";
                     }
@@ -396,141 +397,31 @@ namespace api.Business
             return stations;
         }
 
-        public static void CheckForStation(string passKey, ref eWSStatus status)
+        public static void SubmitWSData(string passKey, string ipAddress, string stationType, string wsModel, string sampleData, 
+                                        string dateutc, string tempinf, string humidityin, string baromrelin, string baromabsin, string tempf, 
+                                        string humidity, string winddir, string windspeedmph, string windgustmph, string maxdailygust, 
+                                        string rainratein, string eventrainin, string hourlyrainin, string dailyrainin, string weeklyrainin, 
+                                        string monthlyrainin, string totalrainin, string solarradiation, string uv)
         {
+
+            //Check data validity
+            if (humidity == "0")
+            {
+                return; //Invalid Data. Sometimes this can be zero when the PWS is offline.
+            }
 
             using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
             {
 
-                using (SqlCommand cmd = new SqlCommand("SELECT Status FROM WSStations WITH(NOLOCK) WHERE (Passkey = @Passkey)", cnn))
+                using (SqlCommand cmd = new SqlCommand("sp_WSReportData", cnn))
                 {
-
-                    cnn.Open();
-
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@PassKey", passKey);
-
-                    short? result;
-
-                    result = (short?)cmd.ExecuteScalar();
-
-                    if (result == null)
-                    {
-                        status = eWSStatus.New;
-                    }
-                    else
-                    {
-                        status = (eWSStatus)result;
-                    }
-
-                }
-
-            }
-
-        }
-
-        public static bool AddStation(string passKey, string ipAddress, string softwareType, string wsModel, string sampleData)
-        {
-
-            using (SqlConnection
-                cnn = new SqlConnection(MyData.ConnectionString))
-            {
-
-                using (SqlCommand
-                    cmd = new SqlCommand("INSERT INTO WSStations (PassKey, SoftwareType, WSModel, IPAddress, SampleData, Status) " +
-                                                               "VALUES(@PassKey, @SoftwareType, @WSModel, @IPAddress, @SampleData, @Status)", cnn))
-                {
-
-                    cnn.Open();
-
-                    cmd.Parameters.AddWithValue("@PassKey", passKey);
-                    cmd.Parameters.AddWithValue("@SoftwareType", softwareType);
+                    cmd.Parameters.AddWithValue("@StationType", stationType);
                     cmd.Parameters.AddWithValue("@WSModel", wsModel);
                     cmd.Parameters.AddWithValue("@IPAddress", ipAddress);
                     cmd.Parameters.AddWithValue("@SampleData", sampleData);
-                    cmd.Parameters.AddWithValue("@Status", eWSStatus.Added);
-
-                    if (cmd.ExecuteNonQuery() > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-
-                }
-
-            }
-
-        }
-
-        public static bool UpdateStation(string passKey, string ipAddress, string softwareType, string sampleData)
-        {
-
-            if (passKey == String.Empty || ipAddress == String.Empty)
-            {
-                return false;
-            }
-
-            using (SqlConnection
-                cnn = new SqlConnection(MyData.ConnectionString))
-            {
-
-                using (SqlCommand
-                    cmd = new SqlCommand("UPDATE WSStations " +
-                                                                "SET SoftwareType = @SoftwareType, SampleData = @SampleData, LastActive = @LastActive, IPAddress = @IPAddress " +
-                                                                "WHERE PassKey = @PassKey", cnn))
-                {
-
-                    cnn.Open();
-
-                    cmd.Parameters.AddWithValue("@PassKey", passKey);
-                    cmd.Parameters.AddWithValue("@SoftwareType", softwareType);
-                    cmd.Parameters.AddWithValue("@IPAddress", ipAddress);
-                    cmd.Parameters.AddWithValue("@SampleData", sampleData);
                     cmd.Parameters.AddWithValue("@LastActive", DateTime.Now);
-
-                    if (cmd.ExecuteNonQuery() > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-
-                }
-
-            }
-
-        }
-
-        public static bool AddData(string passKey, string dateutc, string tempinf, string humidityin, string baromrelin, string baromabsin, string tempf,
-                            string humidity, string winddir, string windspeedmph, string windgustmph, string maxdailygust, string rainratein, string eventrainin, string hourlyrainin,
-                            string dailyrainin, string weeklyrainin, string monthlyrainin, string totalrainin, string solarradiation, string uv)
-        {
-
-            if (humidity == "0")
-            {
-                //Invalid Data. Sometimes this can be zero when the PWS is offline.
-                return false;
-            }
-
-            using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
-            {
-
-                using (SqlCommand cmd = new SqlCommand("INSERT INTO WSReport " +
-                    "   (Passkey, DateUtc, TempInF, HumidityIn, BaromRelIn, BaromAbsIn, TempOutF, " +
-                    "       HumidityOut, WindDir, WindSpeedMPH, WindGustMPH, MaxDailyGust, RainRateInch, EventRainInch, HourlyRainInch, " +
-                    "       DailyRainInch, WeeklyRainInch, MonthlyRainIn, TotalRainInch, SolarRadiation, UV) " +
-                    "VALUES (@Passkey, @DateUtc, @TempInF, @HumidityIn, @BaromRelIn, @BaromAbsIn, " +
-                    "       @TempOutF, @HumidityOut, @WindDir, @WindSpeedMPH, @WindGustMPH, @MaxDailyGust, @RainRateInch, @EventRainInch, " +
-                    "       @HourlyRainInch, @DailyRainInch, @WeeklyRainInch, @MonthlyRainIn, @TotalRainInch, @SolarRadiation, @UV)", cnn))
-                {
-
-                    cnn.Open();
-
-                    cmd.Parameters.AddWithValue("@PassKey", passKey);
                     cmd.Parameters.AddWithValue("@DateUtc", dateutc);
                     cmd.Parameters.AddWithValue("@TempInF", tempinf);
                     cmd.Parameters.AddWithValue("@HumidityIn", humidityin);
@@ -551,9 +442,10 @@ namespace api.Business
                     cmd.Parameters.AddWithValue("@TotalRainInch", totalrainin);
                     cmd.Parameters.AddWithValue("@SolarRadiation", solarradiation);
                     cmd.Parameters.AddWithValue("@UV", uv);
-                    cmd.ExecuteNonQuery();
 
-                    return true;
+                    cnn.Open();
+
+                    cmd.ExecuteNonQuery();
 
                 }
 

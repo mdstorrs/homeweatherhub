@@ -1,0 +1,13 @@
+# Ignore build and dependency files
+/api/bin/
+/api/obj/
+/api/*.user
+/api/*.suo
+/api/*.vs
+
+
+.vs/
+
+# Ignore node_modules for website
+/website/node_modules
+/website/dist

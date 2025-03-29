@@ -22,18 +22,7 @@ namespace api.Controllers
         [HttpGet("{id}/{rep}/{date}/{ms}", Name = "GetHistory")]
         public ResponseClass Get(int id, int rep, string date, int ms)
         {
-
             return Business.Reports.GetHistoryReport(id, rep, date, (BaseReport.MeasurementSystem)ms);
-
-            ////[FromBody] string text
-            //switch ((BaseReport.ReportType)text)
-            //{
-            //    case BaseReport.ReportType.Current:
-            //        return Business.Reports.GetCurrentReport(id, (BaseReport.MeasurementSystem)ms);
-            //    default:
-            //        return Business.Reports.GetCurrentReport(id, (BaseReport.MeasurementSystem)ms);
-            //}
-
         }
 
     }

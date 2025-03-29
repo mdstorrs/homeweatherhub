@@ -131,10 +131,14 @@ function getDateRange(params) {
     switch (params.mode)
     {
         case 1: //7 Days
-            const subtractDays = (params.offset * 7) - 1; 
-            fromDate.setDate(today.getDate() - subtractDays - 7);
-            toDate.setDate(today.getDate() - subtractDays);
-            label = `Week from ${fromDate.toLocaleDateString()}`;
+            const subtractDays = (params.offset * 7); 
+            today.setDate(today.getDate() - subtractDays);
+            console.log(today.toLocaleDateString());
+            fromDate = GetWSWeek(today);
+            toDate.setDate(fromDate.getDate() + 6);
+            //= $"{this.FromDate.ToShortDateString()} to {this.ToDate.AddDays(-1).ToShortDateString()}";
+            label = `${fromDate.toLocaleDateString()} to ${toDate.toLocaleDateString()}`;
+            console.log(label);
             break;
         case 2: //Month
             fromDate = new Date(today.getFullYear(), today.getMonth() - params.offset, 1);
@@ -173,6 +177,29 @@ function getDateRange(params) {
     }; 
 
 }
+
+function GetWSWeek(dateInput) {
+    const date = new Date(dateInput);
+    const day = date.getDay(); // 0 (Sun) - 6 (Sat)
+  
+    // Calculate difference from Monday
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+  
+    // Clone date for start and end
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() + diffToMonday);
+    weekStart.setHours(0, 0, 0, 0);
+
+    /*
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    */
+
+    console.log(weekStart);
+  
+    return weekStart;
+  }
 
 function getParams() {
 

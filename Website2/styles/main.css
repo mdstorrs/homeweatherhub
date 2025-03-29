@@ -89,7 +89,7 @@ p {
   pointer-events: none;
 }
 
-.js-station-list {
+.cs-station-list {
   width: 100%; /* Take up the full width */
   display: flex;
   flex-direction: column;
