@@ -2,6 +2,8 @@ import { baseUrl } from "./main.js";
 
 let previousUpdateTime = new Date; // Initialize to null
 
+const params = getParams();
+
 renderCurrentReport();
 setInterval(renderCurrentReport, 5000); // Refresh every 5 seconds
 
@@ -12,11 +14,18 @@ async function renderCurrentReport() {
     const statusLabel = await document.querySelector('.js-status-label');
     const lastUpdateLabel = await document.querySelector('.js-last-updated');
 
-    let id = localStorage.getItem('id');
+    //let id = localStorage.getItem('id');
+    let metric = localStorage.getItem('metric');
 
-    if (!id) {
-        window.location.href = 'index.html';
+    if (metric == null) 
+        metric = 1;
+
+    if (!params || params.success==false) {
+        //window.location.href = 'index.html';
+        console.log(params);
         return;
+    } else {
+        localStorage.setItem("id", params.id);
     }
 
     let stationName = "Weather Station";
@@ -26,7 +35,7 @@ async function renderCurrentReport() {
     }
 
     //Get the data from the server
-    const data = await getCurrentReport(id, 1);
+    const data = await getCurrentReport(params.id, metric);
 
     let currentData = "";
     let lastUpdate = { refreshNeeded: true, timeString: "...", online: false};
@@ -202,51 +211,27 @@ function getTimeSinceLastUpdate(lastUpdateTime, serverTime, previousLastUpdateTi
 function getParams() {
 
     const urlParams = new URLSearchParams(window.location.search);
-
     const paramId = urlParams.get('id');
-    const paramMode = urlParams.get('mode');
-    const paramOffset = urlParams.get('offset');
-    const paramMetric = urlParams.get('metric');
 
     //Get local storage ID.
     let id = 0; 
-    let mode = 0; 
-    let offset = 0;
-    let metric = 1 ;
 
     if (!paramId)
         id = localStorage.getItem('id');
     else
-        localStorage.setItem('id', paramId);
+        id = paramId;
 
-    if (!paramMode)
-        mode = localStorage.getItem('mode');
-    else
-        localStorage.setItem('mode', paramMode);
+    if (!id) return { success: false, id: 1 } 
 
-    if (!paramMetric)
-        metric = localStorage.getItem('metric');
-    else
-        localStorage.setItem('metric', paramMetric);
-
-    if (!id) return { success: false, id: 1, mode: 0, offset: 0, metric: 1 } 
-
-    if (!mode)
-        mode = 0;
-
-    if (!offset) 
-        offset = 0;
-        
-    if (!metric)
-        metric = 1;
-
-    return { success: true, id: id, mode: mode, offset: offset, metric: metric } 
+    return { success: true, id: id } 
 
 }
 
 //Click event for hisotyr button at the bottom
 document.getElementById("historyButton").addEventListener("click", function() {
-    window.location.href = 'history.html';
+    if (params.id) {
+        window.location.href = `history.html?id=${params.id}`;
+    }
 });
 
 // Optionally, you can call updateMenuLinks when localStorage changes

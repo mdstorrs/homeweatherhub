@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Weather Hub - Casa di Storrs</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">    
   </head>
@@ -15,19 +16,21 @@
       <a href="current.html" id="currentLink" class="conditional-link"><i class="fas fa-thermometer-half"></i><span>Current</span></a>
       <a href="history.html" id="historyLink" class="conditional-link"><i class="fas fa-history"></i><span>History</span></a>
       <div id="settings">
-          <a href="settings.html"><i class="fas fa-cog"></i><span>Settings</span></a>
+        <a href="account.html"><i class="fas fa-user"></i><span>Account</span></a>
+        <a href="settings.html"><i class="fas fa-cog"></i><span>Settings</span></a>
       </div>
     </div>
 
     <div id="main">
 
-      <button class="openbtn" onclick="openNav()">☰</button>
-   
       <div class="cs-header-container">
-        <h1>Home Weather Hub</h1>
-      </div>
+        <h1>
+          <button class="openbtn" onclick="openNav()">☰</button>
+          Home Weather Hub
+        </h1>
+    </div>
 
-      <div class="js-station-history">
+    <div class="js-station-history">
         <div class="cs-section-div">
           <h2 class="js-station-name">Loading...</h2>
           <!--
@@ -42,7 +45,7 @@
       </div>
 
       <div class="cs-bottom-controls">
-        <button class="cs-history-button" id="leftButton">&lt;</button>
+        <button class="cs-button cs-history-button" id="leftButton">&lt;</button>
         <select class="cs-history-combo" id="historyCombo">
           <option selected value="0">Day</option>
           <option value="1">Week</option>
@@ -50,7 +53,7 @@
           <option value="3">Year</option>
           <option value="4">All</option>
         </select>
-        <button class="cs-history-button" id="rightButton">&gt;</button>
+        <button class="cs-button cs-history-button" id="rightButton">&gt;</button>
       </div>
     </div>    
 

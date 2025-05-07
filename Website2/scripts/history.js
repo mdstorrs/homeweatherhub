@@ -208,41 +208,38 @@ function getParams() {
     const paramId = urlParams.get('id');
     const paramMode = urlParams.get('mode');
     const paramOffset = urlParams.get('offset');
-    const paramMetric = urlParams.get('metric');
 
     //Get local storage ID.
     let id = 0; 
     let mode = 0; 
     let offset = 0;
-    let metric = 1 ;
 
-    if (!paramId)
-        id = localStorage.getItem('id');
-    else
-        localStorage.setItem('id', paramId);
+    if (!paramId) 
+        return { success: false, id: 1, mode: 0, offset: 0 }; 
+    else {
+        id = paramId;
+        localStorage.setItem("id", id);
+    }
 
     if (!paramMode)
-        mode = localStorage.getItem('mode');
+        mode = 0;
     else
-        localStorage.setItem('mode', paramMode);
+        mode = paramMode;
 
-    if (!paramMetric)
-        metric = localStorage.getItem('metric');
+    if (!paramOffset)
+        offset = 0; 
     else
-        localStorage.setItem('metric', paramMetric);
+        offset = paramOffset;
 
-    if (!id) return { success: false, id: 1, mode: 0, offset: 0, metric: 1 } 
+    if (!id) return { success: false, id: 1, mode: 0, offset: 0 } 
 
     if (!mode)
         mode = 0;
 
     if (!offset) 
         offset = 0;
-        
-    if (!metric)
-        metric = 1;
 
-    return { success: true, id: id, mode: mode, offset: offset, metric: metric } 
+    return { success: true, id: id, mode: mode, offset: offset } 
 
 }
 
@@ -283,7 +280,9 @@ async function getHistoryReport(dataRange) {
             throw new Error(`Invalid Station ID`);
         }
 
-        const url = `${baseUrl}History/${params.id}/${dataRange.mode}/${dateString}/${params.metric}/`;
+        const metric = localStorage.getItem("metric", 1);
+
+        const url = `${baseUrl}History/${params.id}/${dataRange.mode}/${dateString}/${metric}/`;
 
         const response = await fetch(url, {
             method: "GET",
@@ -310,26 +309,6 @@ async function getHistoryReport(dataRange) {
         return result;
     }
 }
-
-/*
-function updateMenuLinks() {
-    const stationId = localStorage.getItem('id');
-    const currentLink = document.getElementById('currentLink');
-    const historyLink = document.getElementById('historyLink');
-  
-    if (stationId) {
-      currentLink.classList.remove('disabled-link');
-      currentLink.disabled = false;
-      historyLink.classList.remove('disabled-link');
-      historyLink.disabled = false;
-    } else {
-      currentLink.classList.add('disabled-link');
-      currentLink.disabled = true;
-      historyLink.classList.add('disabled-link');
-      historyLink.disabled = true;
-    }
-  }
-    */
 
 import { updateMenuLinks } from './main.js';
 

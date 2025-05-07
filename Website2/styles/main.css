@@ -44,6 +44,7 @@ body {
   width: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 h1 {
@@ -57,6 +58,7 @@ h1 {
   max-width: 500px;
   width: 90%;
   border-radius: 6px;
+  position: relative; /* So we can position the button inside the h1 */
 }
 
 h2 {
@@ -140,11 +142,14 @@ p {
   border-radius: 6px;
 }
 
-.cs-current-button {
+.cs-button {
   background-color: var(--button-color);
   color: white;
   border: 1px solid #002b49;
   border-radius: 4px;
+}
+
+.cs-current-button {
   height: 40px;
   width: 50%;
   margin: 0px 20% 0px 20%;
@@ -160,22 +165,18 @@ p {
 }
 
 .cs-history-button {
-  background-color: var(--button-color);
-  color: white;
-  border: 1px solid #002b49;
-  border-radius: 4px;
   max-width: 200;
   height: 40px;
   width: 20%;
   margin: 0px;
 }
 
-.cs-history-button:hover {
+.cs-button:hover {
   cursor: pointer;
   color: gold;
 }
 
-.cs-history-button:active {
+.cs-button:active {
   background-color: var(--button-color-active);
 }
 
@@ -222,6 +223,7 @@ p {
 .value {
   text-align: right;
   width: 20%;
+  min-width: 80px;
 }
 
 .cs-temp {
@@ -248,7 +250,7 @@ p {
 /* Slide-out menu styles */
 .sidebar {
   height: 100%;
-  width: 80px; /* Initial closed width */
+  width: 0px; /* Initial closed width */
   position: fixed;
   z-index: 1000; /* Ensure it's on top */
   top: 0;
@@ -288,27 +290,29 @@ p {
   cursor: pointer;
   background-color: var(--secondary-backcolor);
   color: var(--main-forecolor);
-  padding: 0; /* Remove default padding */
-  margin: 0; /* Remove default margin */
+  padding: 0;
+  margin: 0;
   border: none;
-  position: fixed;
-  top: 10px;
-  left: 20px;
+  position: absolute; /* Absolute position inside the h1 */
+  left: 10px; /* Position the button inside the h1 */
+  top: 50%; /* Vertically center it within h1 */
+  transform: translateY(-50%); /* Adjust to ensure exact centering */
   z-index: 1001;
-  display: flex; /* Use flexbox for alignment */
-  align-items: center; /* Center vertically */
-  justify-content: center; /* Center horizontally */
-  width: 40px; /* Set a fixed width */
-  height: 40px; /* Set a fixed height */
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .openbtn:hover {
-  background-color: var(--hover-backcolor);
+  /*background-color: var(--hover-backcolor);*/
+  color: var(--button-color-active);
 }
 
 #main {
   transition: filter 0.5s; /* Add transition for overlay effect */
-  margin-left: 80px;
+  margin-left: 0px;
 }
 
 .sidebar.open {
@@ -342,4 +346,72 @@ p {
   transition: 0.3s;
   display: flex;
   align-items: center;
+}
+
+.cs-settings-main {
+  width: 100%; /* Take up the full width */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center buttons horizontally */
+  flex-grow: 1; /* Allow to grow and push footer down */
+}
+
+.toggle-container {
+  display: inline-flex;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  width: 100px;
+}
+
+.toggle-option {
+  padding: 8px 16px;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  border: none;
+  transition: background-color 0.3s ease;
+  font-size: 16px;
+  width: 50px;
+}
+
+.toggle-option.selected {
+  background-color: var(--button-color);
+  color: white;
+}
+
+.toggle-option:hover {
+  background-color: #e0e0e0;
+}
+
+.cs-account-form {
+  margin-top: 20px;
+}
+
+.cs-account-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cs-account-input {
+  border-radius: 4px;
+  height: 40px;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.cs-account-label {
+  display: block;
+  text-align: left;
+  width: 100%;
+  margin: 5px;
+}
+
+.cs-button-login {
+  width: 150px;
+  height: 40px;
+  margin: 10px 0px 10px 0px;
 }

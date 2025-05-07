@@ -1,7 +1,22 @@
 
 import { baseUrl } from "./main.js";
 
-renderStations();
+checkParams();
+
+function checkParams() {
+
+  const urlParams = new URLSearchParams(window.location.search);
+
+  const paramId = urlParams.get('id');
+
+  if (paramId) {
+    showCurrent(paramId);
+    return;
+  }
+
+  renderStations();
+
+}
 
 async function renderStations() {
 
@@ -40,7 +55,7 @@ async function renderStations() {
 
 function showCurrent(id) {
   localStorage.setItem('id', id);
-  window.location.href = `current.html`;
+  window.location.href = `current.html?id=${id}`;
 }
 
 async function getStationList() {
@@ -84,26 +99,6 @@ async function getStationList() {
   }
 
 }
-
-/*
-function updateMenuLinks() {
-  const stationId = localStorage.getItem('stationId');
-  const currentLink = document.getElementById('currentLink');
-  const historyLink = document.getElementById('historyLink');
-
-  if (stationId) {
-    currentLink.classList.remove('disabled-link');
-    currentLink.disabled = false;
-    historyLink.classList.remove('disabled-link');
-    historyLink.disabled = false;
-  } else {
-    currentLink.classList.add('disabled-link');
-    currentLink.disabled = true;
-    historyLink.classList.add('disabled-link');
-    historyLink.disabled = true;
-  }
-}
-  */
 
 import { updateMenuLinks } from './main.js';
 

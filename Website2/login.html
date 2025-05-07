@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Weather Hub - Site Settings</title>
+    <title>Home Weather Hub - User Account</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -28,23 +28,28 @@
     </h1>
   </div>
 
-  <div class="cs-settings-main">
-    
+  <div class="cs-settings-main">    
     <div class="cs-section-div">
-
-      <div class="toggle-container">
-        <button class="toggle-option selected" id="celsius" onclick="selectUnit(1)">°C</button>
-        <button class="toggle-option" id="fahrenheit" onclick="selectUnit(0)">°F</button>
+      <h2>Log In</h2>
+      <form id="login-form" class="cs-account-form">
+          <div class="cs-account-entry" title="Enter either the email address or username associated with your account">
+              <label for="login-username" class="cs-account-label">Email or Username</label>
+              <input type="text" id="login-username" name="login-username" class="cs-account-input" required>
+          </div>
+          <div class="cs-account-entry"  title="Enter the password associated with your account">
+              <label for="new-password" class="cs-account-label">Password</label>
+              <input type="password" id="new-password" name="new-password" class="cs-account-input" required>
+          </div>
+          <button type="submit" class="cs-button cs-button-login">Log In</button>
+      </form>
+      <div title="Click here to create an account and add your own weather stations">
+          <p>Are you new here? <a href="signup.html" id="signup-link">Create Account</a></p>
       </div>
-
-      <p id="selected-unit">Metric System Selected</p>
-
     </div>
-
   </div>
 
   <script type="module" src="scripts/main.js"></script>
-  <script src="scripts/settings.js"></script>
+  <script src="scripts/login.js"></script>
 
   </body>
 </html>

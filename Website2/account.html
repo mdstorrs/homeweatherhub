@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Weather Hub - Stations</title>
+    <title>Home Weather Hub - User Account</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   </head>
   <body>
 
-    <div id="mySidebar" class="sidebar">
+  <div id="mySidebar" class="sidebar">
     <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
     <a href="index.html"><i class="fas fa-satellite-dish"></i><span>Stations</span></a>
     <a href="current.html" id="currentLink" class="conditional-link"><i class="fas fa-thermometer-half"></i><span>Current</span></a>
@@ -20,19 +20,28 @@
       <a href="settings.html"><i class="fas fa-cog"></i><span>Settings</span></a>
     </div>
   </div>
-  
-  <div id="main">
-    <div class="cs-header-container">
-      <h1>
-        <button class="openbtn" onclick="openNav()">☰</button>
-        Home Weather Hub
-      </h1>
+
+  <div class="cs-header-container">
+    <h1>
+      <button class="openbtn" onclick="openNav()">☰</button>
+      Home Weather Hub
+    </h1>
+  </div>
+
+  <div class="cs-settings-main">
+    
+    <div class="cs-section-div">
+
+      <h2 class="js-station-name">Account Details</h2>
+      <h3 class="js-status-label">Loading...</h3>
+      <h4 class="js-last-updated" id="lastUpdatedHeader">...</h4>
+
     </div>
-    <div class="js-station-list cs-station-list"></div>
+
   </div>
 
   <script type="module" src="scripts/main.js"></script>
-  <script type="module" src="scripts/stations.js"></script>
+  <script src="scripts/account.js"></script>
 
   </body>
 </html>

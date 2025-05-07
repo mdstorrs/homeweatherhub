@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Weather Hub - User Account</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+  <body>
+
+  <div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+    <a href="index.html"><i class="fas fa-satellite-dish"></i><span>Stations</span></a>
+    <a href="current.html" id="currentLink" class="conditional-link"><i class="fas fa-thermometer-half"></i><span>Current</span></a>
+    <a href="history.html" id="historyLink" class="conditional-link"><i class="fas fa-history"></i><span>History</span></a>
+    <div id="settings">
+      <a href="account.html"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="settings.html"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </div>
+  </div>
+
+  <div class="cs-header-container">
+    <h1>
+      <button class="openbtn" onclick="openNav()">☰</button>
+      Home Weather Hub
+    </h1>
+  </div>
+
+  <div class="cs-settings-main">    
+    <div class="cs-section-div">
+      <h2>Create Account</h2>
+      <form id="login-form" class="cs-account-form">
+          <div class="cs-account-entry" title="Enter a unique username to create your account">
+              <label for="new-username" class="cs-account-label">Username</label>
+              <input type="text" id="new-username" name="new-username" class="cs-account-input" required>
+          </div>
+          <div class="cs-account-entry" title="Enter your email to create your account">
+              <label for="new-email" class="cs-account-label">Email</label>
+              <input type="email" id="new-email" name="new-email" class="cs-account-input" required>
+          </div>
+          <div class="cs-account-entry" title="Enter a password that is at least 8 characters long">
+              <label for="new-password" class="cs-account-label">Password</label>
+              <input type="password" id="new-password" name="new-password" class="cs-account-input" required>
+          </div>
+          <button type="submit" class="cs-button cs-button-login">Sign Up</button>
+      </form>
+      <div title="Click here if you already have an account">
+          <p>Already have an account? <a href="login.html" id="login-link">Login</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/main.js"></script>
+  <script src="scripts/login.js"></script>
+
+  </body>
+</html>
