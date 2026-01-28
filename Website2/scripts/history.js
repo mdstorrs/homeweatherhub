@@ -280,7 +280,7 @@ async function getHistoryReport(dataRange) {
             throw new Error(`Invalid Station ID`);
         }
 
-        const metric = localStorage.getItem("metric", 1);
+        const metric = localStorage.getItem("metric") || '1';
 
         const url = `${baseUrl}History/${params.id}/${dataRange.mode}/${dateString}/${metric}/`;
 
