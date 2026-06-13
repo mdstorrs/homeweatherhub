@@ -330,20 +330,36 @@ namespace api.Business
                 {
 
                     string command = @"
-                        SELECT Id, StationName, Suburb, State, Country, Latitude, Longitude
-                        FROM WSStations WITH(NOLOCK)
-                        WHERE UserID > 0
-                        ORDER BY StationName
-                        OFFSET @Skip ROWS FETCH NEXT @StationsPerPage ROWS ONLY;";
+                        WITH PagedStations AS
+                        (
+                            SELECT Id, StationName, Suburb, State, Country, Latitude, Longitude, HasPower
+                            FROM WSStations WITH(NOLOCK)
+                            WHERE UserID > 0
+                            ORDER BY StationName
+                            OFFSET @Skip ROWS FETCH NEXT @StationsPerPage ROWS ONLY
+                        )
+                        SELECT ps.Id, ps.StationName, ps.Suburb, ps.State, ps.Country, ps.Latitude, ps.Longitude, ps.HasPower,
+                               ss.SettingName, ss.SettingValue
+                        FROM PagedStations ps
+                        LEFT JOIN WSStationSettings ss WITH(NOLOCK) ON ss.StationID = ps.Id
+                        ORDER BY ps.StationName, ss.SettingName;";
 
                     if (!string.IsNullOrWhiteSpace(filter))
                     {
                         command = @"
-                        SELECT Id, StationName, Suburb, State, Country, Latitude, Longitude
-                        FROM WSStations WITH(NOLOCK)
-                        WHERE UserID > 0 AND StationName LIKE @Filter
-                        ORDER BY StationName
-                        OFFSET @Skip ROWS FETCH NEXT @StationsPerPage ROWS ONLY;";
+                        WITH PagedStations AS
+                        (
+                            SELECT Id, StationName, Suburb, State, Country, Latitude, Longitude, HasPower
+                            FROM WSStations WITH(NOLOCK)
+                            WHERE UserID > 0 AND StationName LIKE @Filter
+                            ORDER BY StationName
+                            OFFSET @Skip ROWS FETCH NEXT @StationsPerPage ROWS ONLY
+                        )
+                        SELECT ps.Id, ps.StationName, ps.Suburb, ps.State, ps.Country, ps.Latitude, ps.Longitude, ps.HasPower,
+                               ss.SettingName, ss.SettingValue
+                        FROM PagedStations ps
+                        LEFT JOIN WSStationSettings ss WITH(NOLOCK) ON ss.StationID = ps.Id
+                        ORDER BY ps.StationName, ss.SettingName;";
                     }
 
                     using (SqlCommand cmd = new SqlCommand(command, cnn)) // SQL Server pagination
@@ -360,14 +376,31 @@ namespace api.Business
 
                         using (SqlDataReader rdr = cmd.ExecuteReader())
                         {
+                            Dictionary<int, Station> stationMap = new Dictionary<int, Station>();
+
                             while (rdr.Read())
                             {
-                                Station station = new Station();
-                                station.Id = (int)rdr["Id"];
-                                station.Name = rdr["StationName"].ToString();
-                                station.Address = $"{rdr["Suburb"].ToString()} {rdr["State"].ToString()}, {rdr["Country"].ToString()}";
-                                station.Coordinates = $"{rdr["Latitude"].ToString()}, {rdr["Longitude"].ToString()}";
-                                stations.Stations.Add(station);
+                                int stationId = (int)rdr["Id"];
+
+                                if (!stationMap.TryGetValue(stationId, out Station station))
+                                {
+                                    station = new Station();
+                                    station.Id = stationId;
+                                    station.Name = rdr["StationName"].ToString();
+                                    station.Address = $"{rdr["Suburb"].ToString()} {rdr["State"].ToString()}, {rdr["Country"].ToString()}";
+                                    station.Coordinates = $"{rdr["Latitude"].ToString()}, {rdr["Longitude"].ToString()}";
+                                    station.HasPower = (bool)rdr["HasPower"];
+
+                                    stationMap.Add(stationId, station);
+                                    stations.Stations.Add(station);
+                                }
+
+                                if (!rdr.IsDBNull(rdr.GetOrdinal("SettingName")) && !rdr.IsDBNull(rdr.GetOrdinal("SettingValue")))
+                                {
+                                    station.Settings.Add(new KeyValuePair<string, string>(
+                                        rdr["SettingName"].ToString(),
+                                        rdr["SettingValue"].ToString()));
+                                }
                             }
                         }
                     }

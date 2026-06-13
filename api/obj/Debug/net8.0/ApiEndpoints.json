@@ -116,6 +116,16 @@
         "Name": "Coordinates",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "HasPower",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "Settings",
+        "Type": "System.Collections.Generic.List\u00601[[System.Collections.Generic.KeyValuePair\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": [
@@ -152,6 +162,16 @@
       {
         "Name": "Coordinates",
         "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "HasPower",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "Settings",
+        "Type": "System.Collections.Generic.List\u00601[[System.Collections.Generic.KeyValuePair\u00602[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       }
     ],

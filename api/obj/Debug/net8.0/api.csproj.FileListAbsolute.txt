@@ -21,12 +21,6 @@ C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets\msbuild.api.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets\msbuild.api.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets\msbuild.build.api.props
-C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.api.props
-C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.api.props
-C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets.pack.json
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\api.csproj.Up2Date
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\api.dll
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\refint\api.dll
@@ -72,3 +66,9 @@ C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\bin\Debug\net8
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\bin\Debug\net8.0\api.staticwebassets.runtime.json
 C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\api.sourcelink.json
+C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\rjimswa.dswa.cache.json
+C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\staticwebassets.build.json.cache
+C:\Users\MichaelStorrs\source\repos\Home Weather Hub Solution\api\obj\Debug\net8.0\swae.build.ex.cache
