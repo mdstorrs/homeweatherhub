@@ -430,6 +430,258 @@ namespace api.Business
             return stations;
         }
 
+        public static ResponseClass AddStation(StationUpsertRequest station)
+        {
+            ResponseClass response = new ResponseClass();
+
+            if (station == null)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = "No station provided";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(station.Name))
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = "Station name is required";
+                return response;
+            }
+
+            try
+            {
+                ParseAddress(station.Address, out string suburb, out string state, out string country);
+                ParseCoordinates(station.Coordinates, out string latitude, out string longitude);
+
+                using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
+                using (SqlCommand cmd = new SqlCommand(@"
+INSERT INTO WSStations (StationName, Suburb, State, Country, Latitude, Longitude, HasPower, UserID)
+VALUES (@StationName, @Suburb, @State, @Country, @Latitude, @Longitude, @HasPower, @UserID);", cnn))
+                {
+                    cnn.Open();
+
+                    cmd.Parameters.AddWithValue("@StationName", station.Name.Trim());
+                    cmd.Parameters.AddWithValue("@Suburb", suburb);
+                    cmd.Parameters.AddWithValue("@State", state);
+                    cmd.Parameters.AddWithValue("@Country", country);
+                    cmd.Parameters.AddWithValue("@Latitude", latitude);
+                    cmd.Parameters.AddWithValue("@Longitude", longitude);
+                    cmd.Parameters.AddWithValue("@HasPower", station.HasPower);
+                    cmd.Parameters.AddWithValue("@UserID", 1);
+
+                    cmd.ExecuteNonQuery();
+                }
+
+                response.Success = true;
+                response.Message = "OK";
+                response.Error = "";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = ex.Message;
+            }
+
+            return response;
+        }
+
+        public static ResponseClass UpdateStation(StationUpsertRequest station)
+        {
+            ResponseClass response = new ResponseClass();
+
+            if (station == null || station.Id <= 0)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = "Invalid station id";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(station.Name))
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = "Station name is required";
+                return response;
+            }
+
+            try
+            {
+                ParseAddress(station.Address, out string suburb, out string state, out string country);
+                ParseCoordinates(station.Coordinates, out string latitude, out string longitude);
+
+                using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
+                using (SqlCommand cmd = new SqlCommand(@"
+UPDATE WSStations
+SET StationName = @StationName,
+    Suburb = @Suburb,
+    State = @State,
+    Country = @Country,
+    Latitude = @Latitude,
+    Longitude = @Longitude,
+    HasPower = @HasPower
+WHERE ID = @ID;", cnn))
+                {
+                    cnn.Open();
+
+                    cmd.Parameters.AddWithValue("@ID", station.Id);
+                    cmd.Parameters.AddWithValue("@StationName", station.Name.Trim());
+                    cmd.Parameters.AddWithValue("@Suburb", suburb);
+                    cmd.Parameters.AddWithValue("@State", state);
+                    cmd.Parameters.AddWithValue("@Country", country);
+                    cmd.Parameters.AddWithValue("@Latitude", latitude);
+                    cmd.Parameters.AddWithValue("@Longitude", longitude);
+                    cmd.Parameters.AddWithValue("@HasPower", station.HasPower);
+
+                    int rows = cmd.ExecuteNonQuery();
+                    if (rows == 0)
+                    {
+                        response.Success = false;
+                        response.Message = "ERROR";
+                        response.Error = "Station not found";
+                        return response;
+                    }
+                }
+
+                response.Success = true;
+                response.Message = "OK";
+                response.Error = "";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = ex.Message;
+            }
+
+            return response;
+        }
+
+        private static void ParseAddress(string address, out string suburb, out string state, out string country)
+        {
+            suburb = string.Empty;
+            state = string.Empty;
+            country = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                return;
+            }
+
+            string[] commaParts = address.Split(',', StringSplitOptions.TrimEntries);
+            if (commaParts.Length > 1)
+            {
+                country = commaParts[1];
+            }
+
+            string[] leftParts = commaParts[0].Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (leftParts.Length > 0)
+            {
+                state = leftParts[leftParts.Length - 1];
+                suburb = string.Join(' ', leftParts.Take(leftParts.Length - 1));
+            }
+            else
+            {
+                suburb = commaParts[0];
+            }
+        }
+
+        private static void ParseCoordinates(string coordinates, out string latitude, out string longitude)
+        {
+            latitude = string.Empty;
+            longitude = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(coordinates))
+            {
+                return;
+            }
+
+            string[] parts = coordinates.Split(',', StringSplitOptions.TrimEntries);
+            if (parts.Length > 0)
+            {
+                latitude = parts[0];
+            }
+
+            if (parts.Length > 1)
+            {
+                longitude = parts[1];
+            }
+        }
+
+        public static ResponseClass UpsertStationSettings(int stationId, List<KeyValuePair<string, string>> settings)
+        {
+            ResponseClass response = new ResponseClass();
+
+            if (stationId <= 0)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = "Invalid station id";
+                return response;
+            }
+
+            if (settings == null || settings.Count == 0)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = "No settings provided";
+                return response;
+            }
+
+            try
+            {
+                using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
+                {
+                    cnn.Open();
+
+                    string command = @"
+MERGE WSStationSettings AS target
+USING (SELECT @StationID AS StationID, @SettingName AS SettingName, @SettingValue AS SettingValue) AS source
+ON target.StationID = source.StationID AND target.SettingName = source.SettingName
+WHEN MATCHED THEN
+    UPDATE SET SettingValue = source.SettingValue
+WHEN NOT MATCHED THEN
+    INSERT (StationID, SettingName, SettingValue)
+    VALUES (source.StationID, source.SettingName, source.SettingValue);";
+
+                    using (SqlCommand cmd = new SqlCommand(command, cnn))
+                    {
+                        cmd.Parameters.Add("@StationID", System.Data.SqlDbType.Int);
+                        cmd.Parameters.Add("@SettingName", System.Data.SqlDbType.NVarChar, 200);
+                        cmd.Parameters.Add("@SettingValue", System.Data.SqlDbType.NVarChar, -1);
+
+                        foreach (var setting in settings)
+                        {
+                            if (string.IsNullOrWhiteSpace(setting.Key))
+                            {
+                                continue;
+                            }
+
+                            cmd.Parameters["@StationID"].Value = stationId;
+                            cmd.Parameters["@SettingName"].Value = setting.Key.Trim();
+                            cmd.Parameters["@SettingValue"].Value = setting.Value ?? string.Empty;
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+
+                response.Success = true;
+                response.Message = "OK";
+                response.Error = "";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Message = "ERROR";
+                response.Error = ex.Message;
+            }
+
+            return response;
+        }
+
         public static void SubmitWSData(string passKey, string ipAddress, string stationType, string wsModel, string sampleData, 
                                         string dateutc, string tempinf, string humidityin, string baromrelin, string baromabsin, string tempf, 
                                         string humidity, string winddir, string windspeedmph, string windgustmph, string maxdailygust, 

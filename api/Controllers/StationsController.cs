@@ -21,17 +21,22 @@ namespace api.Controllers
             return Business.Reports.GetAllStations(filter, page, stationsperpage);
         }
 
-        // POST: Report
         [HttpPost]
-        public void Post([FromForm] Model.Station station)
+        public ResponseClass Post([FromBody] StationUpsertRequest station)
         {
-            //WSData.SaveRawData(model.PASSKEY);
+            return Business.Reports.AddStation(station);
         }
 
-        // PUT: Report/5
-        [HttpPut()]
-        public void Put([FromForm] Model.Station station)
+        [HttpPut]
+        public ResponseClass Put([FromBody] StationUpsertRequest station)
         {
+            return Business.Reports.UpdateStation(station);
+        }
+
+        [HttpPost("settings")]
+        public ResponseClass PostSettings([FromBody] StationSettingsUpdateRequest request)
+        {
+            return Business.Reports.UpsertStationSettings(request?.Id ?? 0, request?.Settings);
         }
 
         [HttpDelete("{id}")]
