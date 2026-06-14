@@ -16,9 +16,9 @@ namespace api.Controllers
 
         // GET: Report/5/1 - weather station id / measurement system. eg Metric or Imperial
         [HttpGet("{page?}/{stationsperpage?}/{filter?}", Name = "Stations")]
-        public StationList Get(int page = 0, int stationsperpage = 100, string filter = "")
+        public StationList Get(int page = 0, int stationsperpage = 100, string filter = "", int stationid = 0)
         {
-            return Business.Reports.GetAllStations(filter, page, stationsperpage);
+            return Business.Reports.GetAllStations(filter, page, stationsperpage, stationid);
         }
 
         [HttpPost]
@@ -36,7 +36,7 @@ namespace api.Controllers
         [HttpPost("settings")]
         public ResponseClass PostSettings([FromBody] StationSettingsUpdateRequest request)
         {
-            return Business.Reports.UpsertStationSettings(request?.Id ?? 0, request?.Settings);
+            return Business.Reports.UpsertStationSettings(request);
         }
 
         [HttpDelete("{id}")]

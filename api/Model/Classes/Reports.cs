@@ -314,7 +314,7 @@ namespace api.Business
 
         }
 
-        public static StationList GetAllStations(string filter, int page, int stationsPerPage)
+        public static StationList GetAllStations(string filter, int page, int stationsPerPage, int stationId = 0)
         {
             StationList stations = new StationList();
             stations.Stations = new List<Station>();
@@ -344,7 +344,17 @@ namespace api.Business
                         LEFT JOIN WSStationSettings ss WITH(NOLOCK) ON ss.StationID = ps.Id
                         ORDER BY ps.StationName, ss.SettingName;";
 
-                    if (!string.IsNullOrWhiteSpace(filter))
+                    if (stationId > 0)
+                    {
+                        command = @"
+                        SELECT s.Id, s.StationName, s.Suburb, s.State, s.Country, s.Latitude, s.Longitude, s.HasPower,
+                               ss.SettingName, ss.SettingValue
+                        FROM WSStations s WITH(NOLOCK)
+                        LEFT JOIN WSStationSettings ss WITH(NOLOCK) ON ss.StationID = s.Id
+                        WHERE s.UserID > 0 AND s.Id = @StationID
+                        ORDER BY s.StationName, ss.SettingName;";
+                    }
+                    else if (!string.IsNullOrWhiteSpace(filter))
                     {
                         command = @"
                         WITH PagedStations AS
@@ -366,12 +376,20 @@ namespace api.Business
 
                     {
                         cnn.Open();
-                        cmd.Parameters.AddWithValue("@Skip", skip);
-                        cmd.Parameters.AddWithValue("@StationsPerPage", stationsPerPage);
 
-                        if (!string.IsNullOrWhiteSpace(filter))
+                        if (stationId > 0)
                         {
-                            cmd.Parameters.AddWithValue("@Filter", $"%{filter}%");
+                            cmd.Parameters.AddWithValue("@StationID", stationId);
+                        }
+                        else
+                        {
+                            cmd.Parameters.AddWithValue("@Skip", skip);
+                            cmd.Parameters.AddWithValue("@StationsPerPage", stationsPerPage);
+
+                            if (!string.IsNullOrWhiteSpace(filter))
+                            {
+                                cmd.Parameters.AddWithValue("@Filter", $"%{filter}%");
+                            }
                         }
 
                         using (SqlDataReader rdr = cmd.ExecuteReader())
@@ -380,18 +398,18 @@ namespace api.Business
 
                             while (rdr.Read())
                             {
-                                int stationId = (int)rdr["Id"];
+                                int currentStationId = (int)rdr["Id"];
 
-                                if (!stationMap.TryGetValue(stationId, out Station station))
+                                if (!stationMap.TryGetValue(currentStationId, out Station station))
                                 {
                                     station = new Station();
-                                    station.Id = stationId;
+                                    station.Id = currentStationId;
                                     station.Name = rdr["StationName"].ToString();
                                     station.Address = $"{rdr["Suburb"].ToString()} {rdr["State"].ToString()}, {rdr["Country"].ToString()}";
                                     station.Coordinates = $"{rdr["Latitude"].ToString()}, {rdr["Longitude"].ToString()}";
                                     station.HasPower = (bool)rdr["HasPower"];
 
-                                    stationMap.Add(stationId, station);
+                                    stationMap.Add(currentStationId, station);
                                     stations.Stations.Add(station);
                                 }
 
@@ -406,11 +424,20 @@ namespace api.Business
                     }
 
                     // Get the total count for pagination information (Important!)
-                    using (SqlCommand countCmd = new SqlCommand("SELECT COUNT(*) FROM WSStations WITH(NOLOCK)", cnn))
+                    string countCommand = stationId > 0
+                        ? "SELECT COUNT(*) FROM WSStations WITH(NOLOCK) WHERE UserID > 0 AND ID = @StationID"
+                        : "SELECT COUNT(*) FROM WSStations WITH(NOLOCK)";
+
+                    using (SqlCommand countCmd = new SqlCommand(countCommand, cnn))
                     {
+                        if (stationId > 0)
+                        {
+                            countCmd.Parameters.AddWithValue("@StationID", stationId);
+                        }
+
                         int totalStations = (int)countCmd.ExecuteScalar();
                         stations.TotalCount = totalStations; // Add total count to your StationList class
-                        stations.TotalPages = (int)Math.Ceiling((double)totalStations / stationsPerPage); // Calculate total pages
+                        stations.TotalPages = totalStations > 0 ? (int)Math.Ceiling((double)totalStations / stationsPerPage) : 0; // Calculate total pages
                     }
 
 
@@ -611,11 +638,11 @@ WHERE ID = @ID;", cnn))
             }
         }
 
-        public static ResponseClass UpsertStationSettings(int stationId, List<KeyValuePair<string, string>> settings)
+        public static ResponseClass UpsertStationSettings(StationSettingsUpdateRequest request)
         {
             ResponseClass response = new ResponseClass();
 
-            if (stationId <= 0)
+            if (request == null || request.Id <= 0)
             {
                 response.Success = false;
                 response.Message = "ERROR";
@@ -623,7 +650,7 @@ WHERE ID = @ID;", cnn))
                 return response;
             }
 
-            if (settings == null || settings.Count == 0)
+            if (request.Settings == null || request.Settings.Count == 0)
             {
                 response.Success = false;
                 response.Message = "ERROR";
@@ -637,7 +664,47 @@ WHERE ID = @ID;", cnn))
                 {
                     cnn.Open();
 
-                    string command = @"
+                    using (SqlTransaction txn = cnn.BeginTransaction())
+                    {
+                        string updateStationCommand = @"
+UPDATE WSStations
+SET StationName = @StationName,
+    Suburb = @Suburb,
+    State = @State,
+    Country = @Country,
+    Latitude = @Latitude,
+    Longitude = @Longitude,
+    HasPower = @HasPower
+WHERE ID = @ID;";
+
+                        using (SqlCommand stationCmd = new SqlCommand(updateStationCommand, cnn, txn))
+                        {
+                            string latitude = string.Empty;
+                            string longitude = string.Empty;
+
+                            ParseCoordinates(request.Coordinates, out latitude, out longitude);
+
+                            stationCmd.Parameters.AddWithValue("@ID", request.Id);
+                            stationCmd.Parameters.AddWithValue("@StationName", request.Name ?? string.Empty);
+                            stationCmd.Parameters.AddWithValue("@Suburb", request.Suburb ?? string.Empty);
+                            stationCmd.Parameters.AddWithValue("@State", request.State ?? string.Empty);
+                            stationCmd.Parameters.AddWithValue("@Country", request.Country ?? string.Empty);
+                            stationCmd.Parameters.AddWithValue("@Latitude", latitude);
+                            stationCmd.Parameters.AddWithValue("@Longitude", longitude);
+                            stationCmd.Parameters.AddWithValue("@HasPower", request.HasPower);
+
+                            int stationRows = stationCmd.ExecuteNonQuery();
+                            if (stationRows == 0)
+                            {
+                                txn.Rollback();
+                                response.Success = false;
+                                response.Message = "ERROR";
+                                response.Error = "Station not found";
+                                return response;
+                            }
+                        }
+
+                        string settingsCommand = @"
 MERGE WSStationSettings AS target
 USING (SELECT @StationID AS StationID, @SettingName AS SettingName, @SettingValue AS SettingValue) AS source
 ON target.StationID = source.StationID AND target.SettingName = source.SettingName
@@ -647,24 +714,27 @@ WHEN NOT MATCHED THEN
     INSERT (StationID, SettingName, SettingValue)
     VALUES (source.StationID, source.SettingName, source.SettingValue);";
 
-                    using (SqlCommand cmd = new SqlCommand(command, cnn))
-                    {
-                        cmd.Parameters.Add("@StationID", System.Data.SqlDbType.Int);
-                        cmd.Parameters.Add("@SettingName", System.Data.SqlDbType.NVarChar, 200);
-                        cmd.Parameters.Add("@SettingValue", System.Data.SqlDbType.NVarChar, -1);
-
-                        foreach (var setting in settings)
+                        using (SqlCommand settingsCmd = new SqlCommand(settingsCommand, cnn, txn))
                         {
-                            if (string.IsNullOrWhiteSpace(setting.Key))
-                            {
-                                continue;
-                            }
+                            settingsCmd.Parameters.Add("@StationID", System.Data.SqlDbType.Int);
+                            settingsCmd.Parameters.Add("@SettingName", System.Data.SqlDbType.NVarChar, 200);
+                            settingsCmd.Parameters.Add("@SettingValue", System.Data.SqlDbType.NVarChar, -1);
 
-                            cmd.Parameters["@StationID"].Value = stationId;
-                            cmd.Parameters["@SettingName"].Value = setting.Key.Trim();
-                            cmd.Parameters["@SettingValue"].Value = setting.Value ?? string.Empty;
-                            cmd.ExecuteNonQuery();
+                            foreach (var setting in request.Settings)
+                            {
+                                if (string.IsNullOrWhiteSpace(setting.Key))
+                                {
+                                    continue;
+                                }
+
+                                settingsCmd.Parameters["@StationID"].Value = request.Id;
+                                settingsCmd.Parameters["@SettingName"].Value = setting.Key.Trim();
+                                settingsCmd.Parameters["@SettingValue"].Value = setting.Value ?? string.Empty;
+                                settingsCmd.ExecuteNonQuery();
+                            }
                         }
+
+                        txn.Commit();
                     }
                 }
 

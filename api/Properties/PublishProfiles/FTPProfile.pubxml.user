@@ -7,21 +7,21 @@ https://go.microsoft.com/fwlink/?LinkID=208121.
     <TimeStampOfAssociatedLegacyPublishXmlFile />
     <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAA84B+LfjEkECdoQ74BfpySwAAAAACAAAAAAAQZgAAAAEAACAAAABGQ2kqU/viNbGhkYg52cfMW3Dl5cp7aVNCaiMbiUQyzQAAAAAOgAAAAAIAACAAAACsT1texxv8nONcBVVPpSwZ7HnHtMI5DthQFGR5RFH0hyAAAAANXEkiCyRI08kGFu0EbFhY6xWfxq+fvA/SSuSZUkBmwEAAAACbEpniyrFlyw+tUoKOY3esmbsB/yXxrBjyef7ML+I0wGIcYMUQQ3T3gLzIW0qRbayAi5crePMxc+XBa+FGR50O</EncryptedPassword>
     <_PublishTargetUrl>ftp://202.74.70.117/api.homeweatherhub.com</_PublishTargetUrl>
-    <History>True|2026-06-13T22:45:42.8033294Z||;True|2025-03-23T10:21:44.8858777+10:00||;True|2025-03-23T10:13:01.0488173+10:00||;True|2025-03-23T10:07:56.9434080+10:00||;True|2025-03-23T07:59:47.8427263+10:00||;True|2025-03-20T06:38:02.4659526+10:00||;True|2025-03-20T06:32:42.4938178+10:00||;True|2025-03-20T06:19:42.7540879+10:00||;True|2025-03-20T06:15:18.5149709+10:00||;False|2025-03-20T06:14:53.8758098+10:00||;True|2025-03-20T06:03:56.1304059+10:00||;False|2025-03-20T06:03:22.4191163+10:00||;</History>
+    <History>True|2026-06-13T23:28:39.1073936Z||;True|2026-06-14T08:45:42.8033294+10:00||;True|2025-03-23T10:21:44.8858777+10:00||;True|2025-03-23T10:13:01.0488173+10:00||;True|2025-03-23T10:07:56.9434080+10:00||;True|2025-03-23T07:59:47.8427263+10:00||;True|2025-03-20T06:38:02.4659526+10:00||;True|2025-03-20T06:32:42.4938178+10:00||;True|2025-03-20T06:19:42.7540879+10:00||;True|2025-03-20T06:15:18.5149709+10:00||;False|2025-03-20T06:14:53.8758098+10:00||;True|2025-03-20T06:03:56.1304059+10:00||;False|2025-03-20T06:03:22.4191163+10:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
   <ItemGroup>
     <File Include="api.deps.json">
-      <publishTime>06/14/2026 08:43:10</publishTime>
+      <publishTime>06/14/2026 09:28:11</publishTime>
     </File>
     <File Include="api.dll">
-      <publishTime>06/14/2026 08:43:09</publishTime>
+      <publishTime>06/14/2026 09:28:10</publishTime>
     </File>
     <File Include="api.exe">
-      <publishTime>06/14/2026 08:43:09</publishTime>
+      <publishTime>06/14/2026 09:28:10</publishTime>
     </File>
     <File Include="api.pdb">
-      <publishTime>06/14/2026 08:43:09</publishTime>
+      <publishTime>06/14/2026 09:28:10</publishTime>
     </File>
     <File Include="api.runtimeconfig.json">
       <publishTime>06/14/2026 08:43:10</publishTime>
@@ -150,7 +150,7 @@ https://go.microsoft.com/fwlink/?LinkID=208121.
       <publishTime>11/01/2023 00:59:04</publishTime>
     </File>
     <File Include="web.config">
-      <publishTime>06/14/2026 08:45:13</publishTime>
+      <publishTime>06/14/2026 09:28:11</publishTime>
     </File>
     <File Include="zh-Hans/Microsoft.Data.SqlClient.resources.dll">
       <publishTime>08/28/2024 04:46:52</publishTime>

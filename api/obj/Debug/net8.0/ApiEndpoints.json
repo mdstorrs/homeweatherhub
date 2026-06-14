@@ -99,7 +99,7 @@
     "Parameters": [
       {
         "Name": "station",
-        "Type": "api.Model.Station",
+        "Type": "api.Model.StationUpsertRequest",
         "IsRequired": true
       }
     ],
@@ -125,7 +125,7 @@
     "Parameters": [
       {
         "Name": "station",
-        "Type": "api.Model.Station",
+        "Type": "api.Model.StationUpsertRequest",
         "IsRequired": true
       }
     ],
@@ -184,6 +184,11 @@
       {
         "Name": "filter",
         "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "stationid",
+        "Type": "System.Int32",
         "IsRequired": false
       }
     ],
