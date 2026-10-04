@@ -1,5 +1,13 @@
 ﻿var builder = WebApplication.CreateBuilder(args);
 
+// Secrets (e.g. the database connection string) live in a file that is not committed.
+// It is published with the app, so it must exist locally before publishing.
+builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
+
+api.Model.MyData.ConnectionString = builder.Configuration.GetConnectionString("WeatherDb")
+    ?? throw new InvalidOperationException(
+        "Missing ConnectionStrings:WeatherDb. Create appsettings.Secrets.json (see appsettings.Secrets.example.json).");
+
 // Add services to the container.
 
 builder.Services.AddControllers();

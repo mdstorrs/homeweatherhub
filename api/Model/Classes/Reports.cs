@@ -752,11 +752,11 @@ WHEN NOT MATCHED THEN
             return response;
         }
 
-        public static void SubmitWSData(string passKey, string ipAddress, string stationType, string wsModel, string sampleData, 
-                                        string dateutc, string tempinf, string humidityin, string baromrelin, string baromabsin, string tempf, 
-                                        string humidity, string winddir, string windspeedmph, string windgustmph, string maxdailygust, 
-                                        string rainratein, string eventrainin, string hourlyrainin, string dailyrainin, string weeklyrainin, 
-                                        string monthlyrainin, string totalrainin, string solarradiation, string uv)
+        public static void SubmitWSData(string passKey, string ipAddress, string? stationType, string? wsModel, string sampleData,
+                                        string? dateutc, string? tempinf, string? humidityin, string? baromrelin, string? baromabsin, string? tempf,
+                                        string? humidity, string? winddir, string? windspeedmph, string? windgustmph, string? maxdailygust,
+                                        string? rainratein, string? eventrainin, string? hourlyrainin, string? dailyrainin, string? weeklyrainin,
+                                        string? monthlyrainin, string? totalrainin, string? solarradiation, string? uv)
         {
 
             //Check data validity
@@ -772,31 +772,31 @@ WHEN NOT MATCHED THEN
                 {
                     cmd.CommandType = System.Data.CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@PassKey", passKey);
-                    cmd.Parameters.AddWithValue("@StationType", stationType);
-                    cmd.Parameters.AddWithValue("@WSModel", wsModel);
+                    cmd.Parameters.AddWithValue("@StationType", DbValue(stationType));
+                    cmd.Parameters.AddWithValue("@WSModel", DbValue(wsModel));
                     cmd.Parameters.AddWithValue("@IPAddress", ipAddress);
                     cmd.Parameters.AddWithValue("@SampleData", sampleData);
                     cmd.Parameters.AddWithValue("@LastActive", DateTime.Now);
-                    cmd.Parameters.AddWithValue("@DateUtc", dateutc);
-                    cmd.Parameters.AddWithValue("@TempInF", tempinf);
-                    cmd.Parameters.AddWithValue("@HumidityIn", humidityin);
-                    cmd.Parameters.AddWithValue("@BaromRelIn", baromrelin);
-                    cmd.Parameters.AddWithValue("@BaromAbsIn", baromabsin);
-                    cmd.Parameters.AddWithValue("@TempOutF", tempf);
-                    cmd.Parameters.AddWithValue("@HumidityOut", humidity);
-                    cmd.Parameters.AddWithValue("@WindDir", winddir);
-                    cmd.Parameters.AddWithValue("@WindSpeedMPH", windspeedmph);
-                    cmd.Parameters.AddWithValue("@WindGustMPH", windgustmph);
-                    cmd.Parameters.AddWithValue("@MaxDailyGust", maxdailygust);
-                    cmd.Parameters.AddWithValue("@RainRateInch", rainratein);
-                    cmd.Parameters.AddWithValue("@EventRainInch", eventrainin);
-                    cmd.Parameters.AddWithValue("@HourlyRainInch", hourlyrainin);
-                    cmd.Parameters.AddWithValue("@DailyRainInch", dailyrainin);
-                    cmd.Parameters.AddWithValue("@WeeklyRainInch", weeklyrainin);
-                    cmd.Parameters.AddWithValue("@MonthlyRainIn", monthlyrainin);
-                    cmd.Parameters.AddWithValue("@TotalRainInch", totalrainin);
-                    cmd.Parameters.AddWithValue("@SolarRadiation", solarradiation);
-                    cmd.Parameters.AddWithValue("@UV", uv);
+                    cmd.Parameters.AddWithValue("@DateUtc", DbValue(dateutc));
+                    cmd.Parameters.AddWithValue("@TempInF", DbValue(tempinf));
+                    cmd.Parameters.AddWithValue("@HumidityIn", DbValue(humidityin));
+                    cmd.Parameters.AddWithValue("@BaromRelIn", DbValue(baromrelin));
+                    cmd.Parameters.AddWithValue("@BaromAbsIn", DbValue(baromabsin));
+                    cmd.Parameters.AddWithValue("@TempOutF", DbValue(tempf));
+                    cmd.Parameters.AddWithValue("@HumidityOut", DbValue(humidity));
+                    cmd.Parameters.AddWithValue("@WindDir", DbValue(winddir));
+                    cmd.Parameters.AddWithValue("@WindSpeedMPH", DbValue(windspeedmph));
+                    cmd.Parameters.AddWithValue("@WindGustMPH", DbValue(windgustmph));
+                    cmd.Parameters.AddWithValue("@MaxDailyGust", DbValue(maxdailygust));
+                    cmd.Parameters.AddWithValue("@RainRateInch", DbValue(rainratein));
+                    cmd.Parameters.AddWithValue("@EventRainInch", DbValue(eventrainin));
+                    cmd.Parameters.AddWithValue("@HourlyRainInch", DbValue(hourlyrainin));
+                    cmd.Parameters.AddWithValue("@DailyRainInch", DbValue(dailyrainin));
+                    cmd.Parameters.AddWithValue("@WeeklyRainInch", DbValue(weeklyrainin));
+                    cmd.Parameters.AddWithValue("@MonthlyRainIn", DbValue(monthlyrainin));
+                    cmd.Parameters.AddWithValue("@TotalRainInch", DbValue(totalrainin));
+                    cmd.Parameters.AddWithValue("@SolarRadiation", DbValue(solarradiation));
+                    cmd.Parameters.AddWithValue("@UV", DbValue(uv));
 
                     cnn.Open();
 
@@ -807,6 +807,9 @@ WHEN NOT MATCHED THEN
             }
 
         }
+
+        // Missing fields are stored as NULL. AddWithValue with a plain null fails with "parameter not supplied".
+        private static object DbValue(string? value) => value == null ? DBNull.Value : value;
 
         public static string GetIP(HttpRequest request, ConnectionInfo connection)
         {
