@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Content Remove="wwwroot\index.html" />
+    <Content Update="appsettings.Secrets.example.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,16 +22,16 @@ namespace api.Controllers
     public class ReportController : ControllerBase
     {
 
+        // Must return Task (not async void) so the request stays open until the body is read and saved.
         [HttpPost]
-        public async void Post()
+        public async Task<IActionResult> Post()
         {
 
             string ipAddress = "Unknown";
+            string rawData = "";
 
             try
             {
-
-                string rawData;
 
                 ipAddress = Reports.GetIP(HttpContext.Request, HttpContext.Connection);
 
@@ -40,47 +40,34 @@ namespace api.Controllers
                     rawData = await reader.ReadToEndAsync();
                 }
 
-                //WSData.SaveRawData(rawData, ipAddress);
-
                 Dictionary<string, string> parsedValues = ParseQueryString(rawData);
 
-                var passKey = parsedValues["PASSKEY"];
-                var stationtype = parsedValues["stationtype"];
-                var dateutc = parsedValues["dateutc"];
-                var tempinf = parsedValues["tempinf"];
-                var humidityin = parsedValues["humidityin"];
-                var baromrelin = parsedValues["baromrelin"];
-                var baromabsin = parsedValues["baromabsin"];
-                var tempf = parsedValues["tempf"];
-                var humidity = parsedValues["humidity"];
-                var winddir = parsedValues["winddir"];
-                var windspeedmph = parsedValues["windspeedmph"];
-                var windgustmph = parsedValues["windgustmph"];
-                var maxdailygust = parsedValues["maxdailygust"];
-                var rainratein = parsedValues["rainratein"];
-                var eventrainin = parsedValues["eventrainin"];
-                var hourlyrainin = parsedValues["hourlyrainin"];
-                var dailyrainin = parsedValues["dailyrainin"];
-                var weeklyrainin = parsedValues["weeklyrainin"];
-                var monthlyrainin = parsedValues["monthlyrainin"];
-                var totalrainin = parsedValues["totalrainin"];
-                var solarradiation = parsedValues["solarradiation"];
-                var uv = parsedValues["uv"];
-                var wh65batt = parsedValues["wh65batt"];
-                var freq = parsedValues["freq"];
-                var model = parsedValues["model"];
+                // Missing fields become null (saved as NULL) instead of throwing and losing the whole reading.
+                string? Field(string key) => parsedValues.TryGetValue(key, out var value) ? value : null;
 
-                Reports.SubmitWSData(passKey, ipAddress, stationtype, model, rawData,
-                    dateutc, tempinf, humidityin, baromrelin, baromabsin,
-                    tempf, humidity, winddir, windspeedmph, windgustmph, maxdailygust,
-                    rainratein, eventrainin, hourlyrainin, dailyrainin, weeklyrainin,
-                    monthlyrainin, totalrainin, solarradiation, uv);
+                var passKey = Field("PASSKEY");
+
+                if (string.IsNullOrEmpty(passKey))
+                {
+                    WSData.SaveRawData("Missing PASSKEY" + Environment.NewLine + rawData, ipAddress);
+                    return Ok();
+                }
+
+                Reports.SubmitWSData(passKey, ipAddress, Field("stationtype"), Field("model"), rawData,
+                    Field("dateutc"), Field("tempinf"), Field("humidityin"), Field("baromrelin"), Field("baromabsin"),
+                    Field("tempf"), Field("humidity"), Field("winddir"), Field("windspeedmph"), Field("windgustmph"), Field("maxdailygust"),
+                    Field("rainratein"), Field("eventrainin"), Field("hourlyrainin"), Field("dailyrainin"), Field("weeklyrainin"),
+                    Field("monthlyrainin"), Field("totalrainin"), Field("solarradiation"), Field("uv"));
 
             }
             catch (Exception ex)
             {
-                WSData.SaveRawData(ex.ToString(), ipAddress);
+                // Keep the raw body with the error so the reading can be replayed later.
+                WSData.SaveRawData(ex.ToString() + Environment.NewLine + rawData, ipAddress);
             }
+
+            // Always 200: the station has nothing useful to do with an error, and the body is logged above.
+            return Ok();
 
         }
 
@@ -95,7 +82,7 @@ namespace api.Controllers
             string[] pairs = queryString.Split('&');
             foreach (string pair in pairs)
             {
-                string[] keyValue = pair.Split('=');
+                string[] keyValue = pair.Split('=', 2);
                 if (keyValue.Length == 2)
                 {
                     string key = HttpUtility.UrlDecode(keyValue[0]);

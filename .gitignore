@@ -11,3 +11,6 @@
 # Ignore node_modules for website
 /website/node_modules
 /website/dist
+# Secrets - never commit
+api/appsettings.Secrets.json
+*.pubxml.user
