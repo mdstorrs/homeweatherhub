@@ -131,11 +131,66 @@ namespace api.Business
             {
                 report.Success = false;
                 report.Message = "ERROR";
-                report.Error = ex.Message;
+                report.Error = ServerError(ex);
             }
 
             return report;
 
+        }
+
+        // Same three result sets as sp_History (station, min/max, total rain), with these fixes:
+        //  - half-open range (>= From AND < To) so a reading at midnight isn't counted in two periods;
+        //  - wind direction averaged as vectors (350 and 10 degrees average to N, not S),
+        //    weighted by wind speed so calm periods don't skew the result.
+        // sp_History is left in place, so the previous API version still works if it is redeployed.
+        private const string HistoryQuery = @"
+DECLARE @PassKey NVARCHAR(50), @WSName NVARCHAR(50);
+SELECT @PassKey = Passkey, @WSName = StationName FROM WSStations WITH (NOLOCK) WHERE ID = @WSID;
+SELECT @PassKey AS PassKey, @WSName AS StationName;
+
+SELECT MAX(TempOutF) AS MaxTempOut, MIN(TempOutF) AS MinTempOut,
+       MAX(TempInF) AS MaxTempIn, MIN(TempInF) AS MinTempIn,
+       MAX(WindSpeedMPH) AS MaxWind, MAX(WindGustMPH) AS MaxWindGust,
+       MAX(HumidityOut) AS MaxHumidityOut, MIN(HumidityOut) AS MinHumidityOut,
+       MAX(HumidityIn) AS MaxHumidityIn, MIN(HumidityIn) AS MinHumidityIn,
+       MAX(BaromRelIn) AS MaxBarom, MIN(BaromRelIn) AS MinBarom,
+       MAX(RainRateInch) AS MaxRainRate, MAX(UV) AS MaxUV,
+       SUM(WindSpeedMPH * SIN(RADIANS(CAST(WindDir AS FLOAT)))) AS WindSinWeighted,
+       SUM(WindSpeedMPH * COS(RADIANS(CAST(WindDir AS FLOAT)))) AS WindCosWeighted,
+       SUM(SIN(RADIANS(CAST(WindDir AS FLOAT)))) AS WindSin,
+       SUM(COS(RADIANS(CAST(WindDir AS FLOAT)))) AS WindCos
+FROM WSReport WITH (NOLOCK)
+WHERE Passkey = @PassKey AND DateAdded >= @FromDate AND DateAdded < @ToDate
+      AND TempOutF <> 0 -- kept from sp_History: zero readings come from a station that is offline
+GROUP BY Passkey;
+
+SELECT SUM(MaxDaily.TotalDailyRain) AS TotalRain FROM (
+    SELECT MAX(DailyRainInch) AS TotalDailyRain
+    FROM WSReport WITH (NOLOCK)
+    WHERE Passkey = @PassKey AND DateAdded >= @FromDate AND DateAdded < @ToDate
+    GROUP BY CAST(DateAdded AS DATE)) MaxDaily;";
+
+        private static int AverageWindDirection(SqlDataReader rdr)
+        {
+            double Read(string column) => rdr[column] == DBNull.Value ? 0 : Convert.ToDouble(rdr[column]);
+
+            double sin = Read("WindSinWeighted");
+            double cos = Read("WindCosWeighted");
+
+            // No wind at all over the period: fall back to the unweighted vector average.
+            if (Math.Abs(sin) < 1e-9 && Math.Abs(cos) < 1e-9)
+            {
+                sin = Read("WindSin");
+                cos = Read("WindCos");
+            }
+
+            if (Math.Abs(sin) < 1e-9 && Math.Abs(cos) < 1e-9)
+            {
+                return 0;
+            }
+
+            double degrees = Math.Atan2(sin, cos) * 180.0 / Math.PI;
+            return (int)Math.Round((degrees + 360.0) % 360.0) % 360;
         }
 
         public static HistoryReport GetHistoryReport(int id, int rep, string dateString, BaseReport.MeasurementSystem ms)
@@ -152,10 +207,9 @@ namespace api.Business
                 }
 
                 using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
-                using (SqlCommand cmd = new SqlCommand("sp_History", cnn))
+                using (SqlCommand cmd = new SqlCommand(HistoryQuery, cnn))
                 {
 
-                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@WSID", id);
                     cmd.Parameters.AddWithValue("@FromDate", report.StartDate);
                     cmd.Parameters.AddWithValue("@ToDate", report.EndDate);
@@ -191,7 +245,7 @@ namespace api.Business
                                 report.OutsideHumidityMin = (int.Parse(rdr["minHumidityOut"].ToString())) + "%";
                                 report.OutsideHumidityMax = (int.Parse(rdr["maxHumidityOut"].ToString())) + "%";
                                 report.UVIndexMax = (int.Parse(rdr["maxUV"].ToString()));
-                                report.WindDirectionAngleAvg = (int.Parse(rdr["avgWindDir"].ToString()));
+                                report.WindDirectionAngleAvg = AverageWindDirection(rdr);
                                 report.WindDirectionAvg = WSGlobal.GetWindDirection(report.WindDirectionAngleAvg);
 
                                 if (ms == BaseReport.MeasurementSystem.Metric)
@@ -242,7 +296,7 @@ namespace api.Business
                                     if (ms == BaseReport.MeasurementSystem.Metric)
                                         report.TotalRain = Math.Round(decimal.Parse(rdr["TotalRain"].ToString()) * (decimal)25.4, 1) + " mm";
                                     else
-                                        report.TotalRain = decimal.Parse(rdr["TotalRain"].ToString()).ToString("F3") + " in/h";
+                                        report.TotalRain = decimal.Parse(rdr["TotalRain"].ToString()).ToString("F3") + " in";
                                 }
                             }
                             else
@@ -261,7 +315,7 @@ namespace api.Business
             {
                 report.Success = false;
                 report.Message = "ERROR";
-                report.Error = ex.Message;
+                report.Error = ServerError(ex);
             }
 
             return report;
@@ -291,7 +345,8 @@ namespace api.Business
                     endDate = startDate.AddDays(1);
                     break;
                 case BaseReport.ReportType.Week:
-                    startDate = reportDate.AddDays(-(int)reportDate.DayOfWeek);
+                    // Weeks run Monday to Sunday, matching the app and website (which send a Monday).
+                    startDate = reportDate.Date.AddDays(-(((int)reportDate.DayOfWeek + 6) % 7));
                     endDate = startDate.AddDays(7);
                     break;
                 case BaseReport.ReportType.Month:
@@ -406,6 +461,9 @@ namespace api.Business
                                     station.Id = currentStationId;
                                     station.Name = rdr["StationName"].ToString();
                                     station.Address = $"{rdr["Suburb"].ToString()} {rdr["State"].ToString()}, {rdr["Country"].ToString()}";
+                                    station.Suburb = rdr["Suburb"].ToString();
+                                    station.State = rdr["State"].ToString();
+                                    station.Country = rdr["Country"].ToString();
                                     station.Coordinates = $"{rdr["Latitude"].ToString()}, {rdr["Longitude"].ToString()}";
                                     station.HasPower = (bool)rdr["HasPower"];
 
@@ -424,15 +482,24 @@ namespace api.Business
                     }
 
                     // Get the total count for pagination information (Important!)
-                    string countCommand = stationId > 0
-                        ? "SELECT COUNT(*) FROM WSStations WITH(NOLOCK) WHERE UserID > 0 AND ID = @StationID"
-                        : "SELECT COUNT(*) FROM WSStations WITH(NOLOCK)";
+                    // Must use the same WHERE as the page query, or searches report the wrong number of pages.
+                    string countCommand;
+                    if (stationId > 0)
+                        countCommand = "SELECT COUNT(*) FROM WSStations WITH(NOLOCK) WHERE UserID > 0 AND ID = @StationID";
+                    else if (!string.IsNullOrWhiteSpace(filter))
+                        countCommand = "SELECT COUNT(*) FROM WSStations WITH(NOLOCK) WHERE UserID > 0 AND StationName LIKE @Filter";
+                    else
+                        countCommand = "SELECT COUNT(*) FROM WSStations WITH(NOLOCK) WHERE UserID > 0";
 
                     using (SqlCommand countCmd = new SqlCommand(countCommand, cnn))
                     {
                         if (stationId > 0)
                         {
                             countCmd.Parameters.AddWithValue("@StationID", stationId);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(filter))
+                        {
+                            countCmd.Parameters.AddWithValue("@Filter", $"%{filter}%");
                         }
 
                         int totalStations = (int)countCmd.ExecuteScalar();
@@ -451,7 +518,7 @@ namespace api.Business
             {
                 stations.Success = false;
                 stations.Message = "ERROR";
-                stations.Error = ex.Message;
+                stations.Error = ServerError(ex);
             }
 
             return stations;
@@ -509,7 +576,7 @@ VALUES (@StationName, @Suburb, @State, @Country, @Latitude, @Longitude, @HasPowe
             {
                 response.Success = false;
                 response.Message = "ERROR";
-                response.Error = ex.Message;
+                response.Error = ServerError(ex);
             }
 
             return response;
@@ -581,7 +648,7 @@ WHERE ID = @ID;", cnn))
             {
                 response.Success = false;
                 response.Message = "ERROR";
-                response.Error = ex.Message;
+                response.Error = ServerError(ex);
             }
 
             return response;
@@ -746,7 +813,7 @@ WHEN NOT MATCHED THEN
             {
                 response.Success = false;
                 response.Message = "ERROR";
-                response.Error = ex.Message;
+                response.Error = ServerError(ex);
             }
 
             return response;
@@ -806,6 +873,14 @@ WHEN NOT MATCHED THEN
 
             }
 
+        }
+
+        // Log the full exception server-side (WSData) and return a generic message,
+        // so database details never reach the app or website.
+        private static string ServerError(Exception ex, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
+        {
+            WSData.SaveRawData($"API error in {caller}: {ex}", "API");
+            return "Server error. Please try again later.";
         }
 
         // Missing fields are stored as NULL. AddWithValue with a plain null fails with "parameter not supplied".
