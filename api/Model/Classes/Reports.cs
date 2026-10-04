@@ -883,37 +883,89 @@ WHEN NOT MATCHED THEN
 
                 }
 
+                // The reading is saved. Update its hour in WSReportHourly as a separate step,
+                // so a rollup problem can never lose a reading (the backfill can always rebuild the hour).
+                if (RollupProcExists.IsAvailable(cnn))
+                {
+                    try
+                    {
+                        using (SqlCommand rollup = new SqlCommand("sp_WSRollupReading", cnn))
+                        {
+                            rollup.CommandType = System.Data.CommandType.StoredProcedure;
+                            rollup.Parameters.AddWithValue("@PassKey", passKey);
+                            rollup.Parameters.AddWithValue("@At", now);
+                            rollup.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogThrottled("rollup", ex);
+                    }
+                }
+
             }
 
         }
 
-        // "Yes" is remembered for good; "no" is re-checked every 10 minutes,
-        // so running the database script later is picked up without restarting the API.
-        private static bool reportProcAcceptsDateAdded;
-        private static DateTime reportProcCheckedUtc = DateTime.MinValue;
+        private static bool ReportProcAcceptsDateAdded(SqlConnection cnn) => ReportProcHasDateAdded.IsAvailable(cnn);
 
-        private static bool ReportProcAcceptsDateAdded(SqlConnection cnn)
+        // Migration 001 (db/migrations): sp_WSReportData accepts @DateAdded.
+        private static readonly DbFeature ReportProcHasDateAdded = new DbFeature(
+            "SELECT COUNT(*) FROM sys.parameters WHERE object_id = OBJECT_ID('dbo.sp_WSReportData') AND name = '@DateAdded'");
+
+        // Migration 002 (db/migrations): hourly rollups.
+        private static readonly DbFeature RollupProcExists = new DbFeature(
+            "SELECT COUNT(*) FROM sys.objects WHERE object_id = OBJECT_ID('dbo.sp_WSRollupReading') AND type = 'P'");
+
+        // Whether a database migration has been run, so the API and the migration can be deployed in either order.
+        // "Yes" is remembered for good; "no" is re-checked every 10 minutes, so running the migration later
+        // is picked up without restarting the API.
+        private sealed class DbFeature
         {
-            if (reportProcAcceptsDateAdded || DateTime.UtcNow - reportProcCheckedUtc < TimeSpan.FromMinutes(10))
-            {
-                return reportProcAcceptsDateAdded;
-            }
+            private readonly string checkSql;
+            private volatile bool available;
+            private DateTime checkedUtc = DateTime.MinValue;
 
-            try
+            public DbFeature(string checkSql) => this.checkSql = checkSql;
+
+            public bool IsAvailable(SqlConnection cnn)
             {
-                using (SqlCommand check = new SqlCommand(
-                    "SELECT COUNT(*) FROM sys.parameters WHERE object_id = OBJECT_ID('dbo.sp_WSReportData') AND name = '@DateAdded'", cnn))
+                if (available || DateTime.UtcNow - checkedUtc < TimeSpan.FromMinutes(10))
                 {
-                    reportProcAcceptsDateAdded = (int)check.ExecuteScalar() > 0;
+                    return available;
                 }
+
+                try
+                {
+                    using (SqlCommand check = new SqlCommand(checkSql, cnn))
+                    {
+                        available = (int)check.ExecuteScalar() > 0;
+                    }
+                }
+                catch
+                {
+                    available = false;
+                }
+
+                checkedUtc = DateTime.UtcNow;
+                return available;
             }
-            catch
+        }
+
+        // Logs to WSData at most once every 10 minutes per kind, so a repeating failure
+        // (every 30 seconds per station) can't flood the table.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> lastLoggedUtc = new();
+
+        private static void LogThrottled(string kind, Exception ex)
+        {
+            DateTime now = DateTime.UtcNow;
+            if (lastLoggedUtc.TryGetValue(kind, out DateTime last) && now - last < TimeSpan.FromMinutes(10))
             {
-                reportProcAcceptsDateAdded = false;
+                return;
             }
 
-            reportProcCheckedUtc = DateTime.UtcNow;
-            return reportProcAcceptsDateAdded;
+            lastLoggedUtc[kind] = now;
+            WSData.SaveRawData($"API {kind} error (repeats within 10 minutes not logged): {ex}", "API");
         }
 
         // Log the full exception server-side (WSData) and return a generic message,
