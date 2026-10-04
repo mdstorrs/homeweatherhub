@@ -36,7 +36,7 @@ namespace api.Business
                 using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
                 {
 
-                    using (SqlCommand cmd = new SqlCommand("SELECT TOP (1) WSReport.*, WSStations.PassKey, WSStations.StationName, GETDATE() AS ServerTime FROM WSReport WITH(NOLOCK) INNER JOIN WSStations WITH(NOLOCK) ON WSReport.Passkey = WSStations.Passkey WHERE (WSStations.ID = @ID) ORDER BY WSReport.DateAdded DESC;", cnn))
+                    using (SqlCommand cmd = new SqlCommand("SELECT TOP (1) WSReport.*, WSStations.PassKey, WSStations.StationName FROM WSReport WITH(NOLOCK) INNER JOIN WSStations WITH(NOLOCK) ON WSReport.Passkey = WSStations.Passkey WHERE (WSStations.ID = @ID) ORDER BY WSReport.DateAdded DESC;", cnn))
                     {
 
                         cnn.Open();
@@ -56,7 +56,9 @@ namespace api.Business
 
                                 report.HumidityInside = (int.Parse(rdr["HumidityIn"].ToString())) + "%";
                                 report.HumidityOutside = (int.Parse(rdr["HumidityOut"].ToString())) + "%";
-                                report.ServerTime = (DateTime.Parse(rdr["ServerTime"].ToString()));
+                                // Same clock as DateAdded, so clients can tell how old the reading is.
+                                DateTime now = AppTime.Now;
+                                report.ServerTime = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerSecond)); // whole seconds, as before
                                 report.LastUpdated = (DateTime.Parse(rdr["DateAdded"].ToString()));
                                 report.WindDirAngle = (int.Parse(rdr["WindDir"].ToString()));
                                 report.UVIndex = (int.Parse(rdr["UV"].ToString()));
@@ -832,18 +834,30 @@ WHEN NOT MATCHED THEN
                 return; //Invalid Data. Sometimes this can be zero when the PWS is offline.
             }
 
+            DateTime now = AppTime.Now;
+
             using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
             {
+
+                cnn.Open();
 
                 using (SqlCommand cmd = new SqlCommand("sp_WSReportData", cnn))
                 {
                     cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                    // Only send @DateAdded once the procedure accepts it (db/migrations script),
+                    // so the API and the database change can be deployed in either order.
+                    if (ReportProcAcceptsDateAdded(cnn))
+                    {
+                        cmd.Parameters.AddWithValue("@DateAdded", now);
+                    }
+
                     cmd.Parameters.AddWithValue("@PassKey", passKey);
                     cmd.Parameters.AddWithValue("@StationType", DbValue(stationType));
                     cmd.Parameters.AddWithValue("@WSModel", DbValue(wsModel));
                     cmd.Parameters.AddWithValue("@IPAddress", ipAddress);
                     cmd.Parameters.AddWithValue("@SampleData", sampleData);
-                    cmd.Parameters.AddWithValue("@LastActive", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@LastActive", now);
                     cmd.Parameters.AddWithValue("@DateUtc", DbValue(dateutc));
                     cmd.Parameters.AddWithValue("@TempInF", DbValue(tempinf));
                     cmd.Parameters.AddWithValue("@HumidityIn", DbValue(humidityin));
@@ -865,14 +879,41 @@ WHEN NOT MATCHED THEN
                     cmd.Parameters.AddWithValue("@SolarRadiation", DbValue(solarradiation));
                     cmd.Parameters.AddWithValue("@UV", DbValue(uv));
 
-                    cnn.Open();
-
                     cmd.ExecuteNonQuery();
 
                 }
 
             }
 
+        }
+
+        // "Yes" is remembered for good; "no" is re-checked every 10 minutes,
+        // so running the database script later is picked up without restarting the API.
+        private static bool reportProcAcceptsDateAdded;
+        private static DateTime reportProcCheckedUtc = DateTime.MinValue;
+
+        private static bool ReportProcAcceptsDateAdded(SqlConnection cnn)
+        {
+            if (reportProcAcceptsDateAdded || DateTime.UtcNow - reportProcCheckedUtc < TimeSpan.FromMinutes(10))
+            {
+                return reportProcAcceptsDateAdded;
+            }
+
+            try
+            {
+                using (SqlCommand check = new SqlCommand(
+                    "SELECT COUNT(*) FROM sys.parameters WHERE object_id = OBJECT_ID('dbo.sp_WSReportData') AND name = '@DateAdded'", cnn))
+                {
+                    reportProcAcceptsDateAdded = (int)check.ExecuteScalar() > 0;
+                }
+            }
+            catch
+            {
+                reportProcAcceptsDateAdded = false;
+            }
+
+            reportProcCheckedUtc = DateTime.UtcNow;
+            return reportProcAcceptsDateAdded;
         }
 
         // Log the full exception server-side (WSData) and return a generic message,
