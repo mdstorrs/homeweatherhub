@@ -4,6 +4,9 @@
 // It is published with the app, so it must exist locally before publishing.
 builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
 
+// All stored times are in this zone, regardless of where the server is (see AppTime).
+api.Model.AppTime.Configure(builder.Configuration["AppTimeZone"]);
+
 api.Model.MyData.ConnectionString = builder.Configuration.GetConnectionString("WeatherDb")
     ?? throw new InvalidOperationException(
         "Missing ConnectionStrings:WeatherDb. Create appsettings.Secrets.json (see appsettings.Secrets.example.json).");
