@@ -145,11 +145,13 @@ namespace api.Business
         //  - wind direction averaged as vectors (350 and 10 degrees average to N, not S),
         //    weighted by wind speed so calm periods don't skew the result.
         // sp_History is left in place, so the previous API version still works if it is redeployed.
-        private const string HistoryQuery = @"
+        private const string HistoryStationPart = @"
 DECLARE @PassKey NVARCHAR(50), @WSName NVARCHAR(50);
 SELECT @PassKey = Passkey, @WSName = StationName FROM WSStations WITH (NOLOCK) WHERE ID = @WSID;
 SELECT @PassKey AS PassKey, @WSName AS StationName;
+";
 
+        private const string HistoryRawPart = @"
 SELECT MAX(TempOutF) AS MaxTempOut, MIN(TempOutF) AS MinTempOut,
        MAX(TempInF) AS MaxTempIn, MIN(TempInF) AS MinTempIn,
        MAX(WindSpeedMPH) AS MaxWind, MAX(WindGustMPH) AS MaxWindGust,
@@ -170,7 +172,44 @@ SELECT SUM(MaxDaily.TotalDailyRain) AS TotalRain FROM (
     SELECT MAX(DailyRainInch) AS TotalDailyRain
     FROM WSReport WITH (NOLOCK)
     WHERE Passkey = @PassKey AND DateAdded >= @FromDate AND DateAdded < @ToDate
-    GROUP BY CAST(DateAdded AS DATE)) MaxDaily;";
+    GROUP BY CAST(DateAdded AS DATE)) MaxDaily;
+";
+
+        private const string HistoryQuery = HistoryStationPart + HistoryRawPart;
+
+        // Same result sets and columns, read from WSReportHourly (migration 002) instead of millions of raw rows.
+        // The rollups were checked against the raw readings: min/max, counts and rain match exactly.
+        // Falls back to the raw query when the range has no rollup rows (e.g. a station added before its backfill).
+        // HAVING keeps "no valid readings" returning no row, exactly like the raw query's GROUP BY.
+        private const string HistoryRollupQuery = HistoryStationPart + @"
+IF EXISTS (SELECT 1 FROM dbo.WSReportHourly WHERE StationID = @WSID AND HourStart >= @FromDate AND HourStart < @ToDate)
+BEGIN
+    SELECT MAX(TempOutMax) AS MaxTempOut, MIN(TempOutMin) AS MinTempOut,
+           MAX(TempInMax) AS MaxTempIn, MIN(TempInMin) AS MinTempIn,
+           MAX(WindSpeedMax) AS MaxWind, MAX(WindGustMax) AS MaxWindGust,
+           MAX(HumidityOutMax) AS MaxHumidityOut, MIN(HumidityOutMin) AS MinHumidityOut,
+           MAX(HumidityInMax) AS MaxHumidityIn, MIN(HumidityInMin) AS MinHumidityIn,
+           MAX(BaromRelMax) AS MaxBarom, MIN(BaromRelMin) AS MinBarom,
+           MAX(RainRateMax) AS MaxRainRate, MAX(UVMax) AS MaxUV,
+           SUM(WindSinWeighted) AS WindSinWeighted, SUM(WindCosWeighted) AS WindCosWeighted,
+           SUM(WindSin) AS WindSin, SUM(WindCos) AS WindCos
+    FROM dbo.WSReportHourly
+    WHERE StationID = @WSID AND HourStart >= @FromDate AND HourStart < @ToDate
+    HAVING SUM(ValidCount) > 0;
+
+    -- DECIMAL, because a FLOAT sum can come back as e.g. 4.2E-17, which decimal.Parse rejects.
+    SELECT CAST(ROUND(SUM(RainInch), 4) AS DECIMAL(12, 4)) AS TotalRain
+    FROM dbo.WSReportHourly
+    WHERE StationID = @WSID AND HourStart >= @FromDate AND HourStart < @ToDate;
+END
+ELSE
+BEGIN
+" + HistoryRawPart + @"
+END";
+
+        // Migration 002: hourly rollups exist.
+        private static readonly DbFeature RollupTableExists = new DbFeature(
+            "SELECT COUNT(*) FROM sys.objects WHERE object_id = OBJECT_ID('dbo.WSReportHourly') AND type = 'U'");
 
         private static int AverageWindDirection(SqlDataReader rdr)
         {
@@ -209,14 +248,15 @@ SELECT SUM(MaxDaily.TotalDailyRain) AS TotalRain FROM (
                 }
 
                 using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
-                using (SqlCommand cmd = new SqlCommand(HistoryQuery, cnn))
                 {
+                    cnn.Open();
+
+                    using (SqlCommand cmd = new SqlCommand(RollupTableExists.IsAvailable(cnn) ? HistoryRollupQuery : HistoryQuery, cnn))
+                    {
 
                     cmd.Parameters.AddWithValue("@WSID", id);
                     cmd.Parameters.AddWithValue("@FromDate", report.StartDate);
                     cmd.Parameters.AddWithValue("@ToDate", report.EndDate);
-
-                    cnn.Open();
 
                     using (SqlDataReader rdr = cmd.ExecuteReader())
                     {
@@ -310,6 +350,8 @@ SELECT SUM(MaxDaily.TotalDailyRain) AS TotalRain FROM (
 
                     }
 
+                    }
+
                 }
 
             }
@@ -324,7 +366,147 @@ SELECT SUM(MaxDaily.TotalDailyRain) AS TotalRain FROM (
 
         }
 
-        public static HistoryReport GetDateRange(int rep, string dateString) 
+        public static ChartReport GetChartReport(int id, int rep, string dateString, BaseReport.MeasurementSystem ms)
+        {
+            ChartReport chart = new ChartReport { WSID = id, Measurement = ms };
+            bool metric = ms == BaseReport.MeasurementSystem.Metric;
+
+            HistoryReport range = GetDateRange(rep, dateString);
+            if (!range.Success)
+            {
+                chart.Success = false;
+                chart.Message = range.Message;
+                return chart;
+            }
+
+            chart.Type = range.Type;
+            chart.StartDate = range.StartDate;
+            chart.EndDate = range.EndDate;
+            chart.Units = metric
+                ? new ChartUnits { Temperature = "C", Rain = "mm", RainRate = "mm/h", Wind = "km/h", Pressure = "hPa" }
+                : new ChartUnits { Temperature = "F", Rain = "in", RainRate = "in/h", Wind = "mph", Pressure = "in" };
+
+            // Hourly points for a day or week, daily for a month or year, monthly for all time.
+            // (Fixed SQL fragments only; nothing from the request is put into the SQL text.)
+            string bucket;
+            switch (range.Type)
+            {
+                case BaseReport.ReportType.Day:
+                case BaseReport.ReportType.Week:
+                    chart.Granularity = "hour";
+                    bucket = "HourStart";
+                    break;
+                case BaseReport.ReportType.Month:
+                case BaseReport.ReportType.Year:
+                    chart.Granularity = "day";
+                    bucket = "CAST(CAST(HourStart AS DATE) AS DATETIME)";
+                    break;
+                default:
+                    chart.Granularity = "month";
+                    bucket = "DATEADD(MONTH, DATEDIFF(MONTH, 0, HourStart), 0)";
+                    break;
+            }
+
+            string query = $@"
+SELECT StationName FROM WSStations WITH (NOLOCK) WHERE ID = @WSID;
+
+SELECT {bucket} AS Bucket,
+       MAX(CAST(IsDailySummary AS INT)) AS IsSummary,
+       SUM(SampleCount) AS Samples, SUM(ValidCount) AS ValidCount,
+       MIN(TempOutMin) AS TempOutMin, MAX(TempOutMax) AS TempOutMax, SUM(TempOutSum) AS TempOutSum,
+       SUM(TempInSum) AS TempInSum, SUM(HumidityOutSum) AS HumidityOutSum, SUM(BaromRelSum) AS BaromRelSum,
+       SUM(WindSpeedSum) AS WindSpeedSum, MAX(WindGustMax) AS WindGustMax,
+       SUM(WindSinWeighted) AS WindSinWeighted, SUM(WindCosWeighted) AS WindCosWeighted,
+       SUM(WindSin) AS WindSin, SUM(WindCos) AS WindCos,
+       SUM(RainInch) AS Rain, MAX(RainRateMax) AS RainRateMax, MAX(UVMax) AS UVMax
+FROM dbo.WSReportHourly
+WHERE StationID = @WSID AND HourStart >= @FromDate AND HourStart < @ToDate
+GROUP BY {bucket}
+ORDER BY Bucket;";
+
+            try
+            {
+                using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
+                {
+                    cnn.Open();
+
+                    if (!RollupTableExists.IsAvailable(cnn))
+                    {
+                        chart.Success = false;
+                        chart.Message = "Charts are not available yet.";
+                        return chart;
+                    }
+
+                    using (SqlCommand cmd = new SqlCommand(query, cnn))
+                    {
+                        cmd.Parameters.AddWithValue("@WSID", id);
+                        cmd.Parameters.AddWithValue("@FromDate", range.StartDate);
+                        cmd.Parameters.AddWithValue("@ToDate", range.EndDate);
+
+                        using (SqlDataReader rdr = cmd.ExecuteReader())
+                        {
+                            if (!rdr.Read())
+                            {
+                                chart.Success = false;
+                                chart.Message = "Station not found";
+                                return chart;
+                            }
+                            chart.WSName = rdr["StationName"].ToString();
+
+                            rdr.NextResult();
+                            while (rdr.Read())
+                            {
+                                double? Value(string column) => rdr[column] == DBNull.Value ? null : Convert.ToDouble(rdr[column]);
+
+                                int validCount = Convert.ToInt32(rdr["ValidCount"]);
+                                double? Average(string sumColumn) =>
+                                    validCount > 0 && Value(sumColumn) is double sum ? sum / validCount : null;
+
+                                chart.Points.Add(new ChartPoint
+                                {
+                                    Time = (DateTime)rdr["Bucket"],
+                                    IsSummary = Convert.ToInt32(rdr["IsSummary"]) == 1,
+                                    Samples = Convert.ToInt32(rdr["Samples"]),
+                                    TempOutMin = Temperature(Value("TempOutMin"), metric),
+                                    TempOutMax = Temperature(Value("TempOutMax"), metric),
+                                    TempOutAvg = Temperature(Average("TempOutSum"), metric),
+                                    TempInAvg = Temperature(Average("TempInSum"), metric),
+                                    HumidityOutAvg = Round(Average("HumidityOutSum"), 0),
+                                    PressureAvg = Pressure(Average("BaromRelSum"), metric),
+                                    Rain = RainAmount(Value("Rain"), metric),
+                                    RainRateMax = RainAmount(Value("RainRateMax"), metric),
+                                    WindSpeedAvg = WindSpeed(Average("WindSpeedSum"), metric),
+                                    WindGustMax = WindSpeed(Value("WindGustMax"), metric),
+                                    WindDirectionAvg = validCount > 0 ? AverageWindDirection(rdr) : null,
+                                    UVMax = Round(Value("UVMax"), 1)
+                                });
+                            }
+                        }
+                    }
+                }
+
+                chart.Success = true;
+                chart.Message = chart.Points.Count > 0 ? "OK" : "No data for the selected range";
+            }
+            catch (Exception ex)
+            {
+                chart.Success = false;
+                chart.Message = "ERROR";
+                chart.Error = ServerError(ex);
+            }
+
+            return chart;
+        }
+
+        // Unit conversions for charts (stored values are imperial, as the stations send them).
+        // Same factors and rounding as the History report.
+        private static double? Round(double? value, int digits) => value.HasValue ? Math.Round(value.Value, digits) : null;
+        private static double? Temperature(double? f, bool metric) => Round(metric && f.HasValue ? (f - 32) * 5 / 9 : f, 1);
+        private static double? RainAmount(double? inches, bool metric) => metric ? Round(inches * 25.4, 1) : Round(inches, 3);
+        private static double? WindSpeed(double? mph, bool metric) => Round(metric ? mph * 1.609344 : mph, 1);
+        private static double? Pressure(double? inHg, bool metric) => metric ? Round(inHg * 33.863886666667, 0) : Round(inHg, 3);
+
+        public static HistoryReport GetDateRange(int rep, string dateString)
         {
 
             DateTime reportDate;
