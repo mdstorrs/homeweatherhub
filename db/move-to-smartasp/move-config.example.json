@@ -1,0 +1,5 @@
+{
+  "TargetConnectionString": "Data Source=sql5113.site4now.net;Initial Catalog=db_acd780_homeweatherhub;User Id=db_acd780_homeweatherhub_admin;Password=YOUR_DB_PASSWORD;Encrypt=True;TrustServerCertificate=True;Connection Timeout=60",
+  "KeepRawDays": 7,
+  "KeepLogDays": 30
+}

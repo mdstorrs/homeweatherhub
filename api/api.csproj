@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>9de5f632-5599-4899-b592-02534c5249cb</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,9 +12,17 @@
     <Content Update="appsettings.Secrets.example.json" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
+  <!-- Each host gets only its own connection string. The SmartASP publish profile sets EnvironmentName=SmartASP
+       (which also puts ASPNETCORE_ENVIRONMENT=SmartASP in the published web.config). -->
+  <ItemGroup Condition="'$(EnvironmentName)' == 'SmartASP'">
+    <Content Update="appsettings.Secrets.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnvironmentName)' != 'SmartASP'">
+    <Content Update="appsettings.Secrets.SmartASP.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
   </ItemGroup>
 
   <ItemGroup>

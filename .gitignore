@@ -12,5 +12,8 @@
 /website/node_modules
 /website/dist
 # Secrets - never commit
-api/appsettings.Secrets.json
+api/appsettings.Secrets*.json
+!api/appsettings.Secrets.example.json
 *.pubxml.user
+db/move-to-smartasp/move-config.json
+db/move-to-smartasp/move-state.json

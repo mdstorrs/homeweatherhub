@@ -3,15 +3,22 @@
 // Secrets (e.g. the database connection string) live in a file that is not committed.
 // It is published with the app, so it must exist locally before publishing.
 builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: false);
+// Per host: e.g. appsettings.Secrets.SmartASP.json when ASPNETCORE_ENVIRONMENT=SmartASP (set by that publish profile).
+// Required on named hosts, so a missing file stops the app instead of silently using another host's database.
+bool namedHost = !builder.Environment.IsDevelopment() && !builder.Environment.IsProduction();
+builder.Configuration.AddJsonFile($"appsettings.Secrets.{builder.Environment.EnvironmentName}.json", optional: !namedHost, reloadOnChange: false);
 
 // All stored times are in this zone, regardless of where the server is (see AppTime).
 api.Model.AppTime.Configure(builder.Configuration["AppTimeZone"]);
 
 api.Model.MyData.ConnectionString = builder.Configuration.GetConnectionString("WeatherDb")
     ?? throw new InvalidOperationException(
-        "Missing ConnectionStrings:WeatherDb. Create appsettings.Secrets.json (see appsettings.Secrets.example.json).");
+        $"Missing ConnectionStrings:WeatherDb. Create appsettings.Secrets.json or appsettings.Secrets.{builder.Environment.EnvironmentName}.json (see appsettings.Secrets.example.json).");
 
 // Add services to the container.
+
+// Database clean-up every few hours (7 days of readings, 30 days of log) where migration 003 exists.
+builder.Services.AddHostedService<api.Model.MaintenanceService>();
 
 builder.Services.AddControllers();
 

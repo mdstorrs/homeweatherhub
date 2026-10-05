@@ -1096,6 +1096,51 @@ WHEN NOT MATCHED THEN
             "SELECT COUNT(*) FROM sys.parameters WHERE object_id = OBJECT_ID('dbo.sp_WSReportData') AND name = '@DateAdded'");
 
         // Migration 002 (db/migrations): hourly rollups.
+        // Migration 003 (db/migrations): daily clean-up. Only created on the new host, so Conetix is never trimmed.
+        private static readonly DbFeature PurgeProcExists = new DbFeature(
+            "SELECT COUNT(*) FROM sys.objects WHERE object_id = OBJECT_ID('dbo.sp_WSPurgeOldData') AND type = 'P'");
+
+        // Deletes per-entry readings older than keepRawDays (only days whose hourly rollup matches) and log rows
+        // older than keepLogDays. Does nothing where migration 003 hasn't been run. Called by MaintenanceService.
+        public static void RunMaintenance(int keepRawDays, int keepLogDays)
+        {
+            try
+            {
+                using (SqlConnection cnn = new SqlConnection(MyData.ConnectionString))
+                {
+                    cnn.Open();
+
+                    if (!PurgeProcExists.IsAvailable(cnn))
+                    {
+                        return;
+                    }
+
+                    using (SqlCommand cmd = new SqlCommand("sp_WSPurgeOldData", cnn))
+                    {
+                        cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                        cmd.CommandTimeout = 600;
+                        cmd.Parameters.AddWithValue("@KeepRawDays", keepRawDays);
+                        cmd.Parameters.AddWithValue("@KeepLogDays", keepLogDays);
+                        cmd.Parameters.AddWithValue("@Now", AppTime.Now);
+
+                        using (SqlDataReader rdr = cmd.ExecuteReader())
+                        {
+                            if (rdr.Read() && Convert.ToInt32(rdr["DaysSkipped"]) > 0)
+                            {
+                                LogThrottled("maintenance-skipped", new InvalidOperationException(
+                                    $"{rdr["DaysSkipped"]} station-day(s) before {rdr["RawCutoff"]} were NOT cleaned because their hourly " +
+                                    "rollup doesn't match the readings. Rebuild them with sp_WSRollupBackfill; they are cleaned on the next run."));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogThrottled("maintenance", ex);
+            }
+        }
+
         private static readonly DbFeature RollupProcExists = new DbFeature(
             "SELECT COUNT(*) FROM sys.objects WHERE object_id = OBJECT_ID('dbo.sp_WSRollupReading') AND type = 'P'");
 
