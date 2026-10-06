@@ -4,16 +4,33 @@
     Current, Stations and Chart. Read-only. Run before switching DNS; everything must match.
 
 .EXAMPLE
-    .\compare-apis.ps1 -NewUrl "https://yoursite.smartasp.net"
+    # Before the DNS switch: ask SmarterASP's server directly, presenting the real host name
+    .\compare-apis.ps1 -NewUrl "http://208.98.35.67" -NewHostHeader "api.homeweatherhub.com"
 #>
 param(
     [string]$OldUrl = "https://api.homeweatherhub.com",
     [Parameter(Mandatory = $true)][string]$NewUrl,
+    [string]$NewHostHeader,     # send this Host header to NewUrl (test a site by IP before DNS points at it)
     [int[]]$Stations = @(1, 2)
 )
 
 $ErrorActionPreference = "Stop"
 $OldUrl = $OldUrl.TrimEnd('/'); $NewUrl = $NewUrl.TrimEnd('/')
+
+Add-Type -AssemblyName System.Net.Http
+$http = New-Object System.Net.Http.HttpClient
+$http.Timeout = [TimeSpan]::FromSeconds(120)
+
+# GET a URL and parse the JSON. For NewUrl, sends the Host header if one was given
+# (Invoke-RestMethod in Windows PowerShell 5.1 can't set Host).
+function Invoke-RestMethod([string]$Uri, [int]$TimeoutSec) {
+    $request = New-Object System.Net.Http.HttpRequestMessage([System.Net.Http.HttpMethod]::Get, $Uri)
+    if ($NewHostHeader -and $Uri.StartsWith($NewUrl)) { $request.Headers.Host = $NewHostHeader }
+    $response = $http.SendAsync($request).GetAwaiter().GetResult()
+    $body = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+    if (-not $response.IsSuccessStatusCode) { throw "HTTP $([int]$response.StatusCode) from $Uri" }
+    return $body | ConvertFrom-Json
+}
 
 $historyFields = "outsideTemperatureMin", "outsideTemperatureMax", "insideTemperatureMin", "insideTemperatureMax",
     "outsideHumidityMin", "outsideHumidityMax", "insideHumidityMin", "insideHumidityMax", "pressureMin", "pressureMax",

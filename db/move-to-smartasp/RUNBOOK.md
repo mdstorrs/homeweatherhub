@@ -28,8 +28,15 @@ Files in this folder:
       and how to publish to it (FTP or Web Deploy).
 - [ ] **.NET**: check which ASP.NET Core versions SmartASP supports. .NET 8 support ends 10 Nov 2026,
       so publish .NET 10 if offered (or publish self-contained).
-- [ ] **DNS**: find where `homeweatherhub.com` DNS is managed. **48 hours before the switch, lower the TTL**
-      of `api.homeweatherhub.com` (and the website records if they move) to 300 seconds.
+- [ ] **DNS** (checked 2026-10-06): the domain uses `ns1/ns2.homeweatherhub.com`, i.e. **Conetix's DNS**.
+      `homeweatherhub.com`, `www` (CNAME) and `api` → `202.74.70.117` (Conetix), TTL **21600 s (6 h)**.
+      SmarterASP: main site `mdstorrs-001-site7` (temp URL https://mdstorrs-001-site7.ftempurl.com/),
+      API subsite `mdstorrs-001-subsite8`, both on **`208.98.35.67`**.
+      **At least 24 h before the switch, lower the TTL** of those records to 300 s in Conetix's DNS (Plesk).
+- [ ] **HTTPS for `api.homeweatherhub.com` on SmarterASP**: the app and website call `https://`, so a certificate
+      must be ready at the switch. Either export the current certificate (with private key) from Conetix Plesk and
+      import it into SmarterASP beforehand (no gap), or issue SmarterASP's free certificate right after the DNS switch
+      (HTTPS errors in the app/website for a few minutes). Stations post over plain HTTP, so they're unaffected.
 - [ ] **Website (Website2)**: decide whether it moves to SmartASP too. It only calls the API, so it can move
       before, with, or after the API.
 - [ ] **Old logger on Conetix**: something on the Conetix account is still running an old API build that logs
@@ -57,9 +64,9 @@ Files in this folder:
    - The API refuses to start on SmartASP if that file is missing, so it can't fall back to the Conetix database.
    - Don't put a dot in publish profile names (e.g. "SmarterASP.Net"): the build treats it as a file extension
      and silently ignores the profile's settings.
-5. Compare the two APIs:
+5. Compare the two APIs. Before DNS changes, ask SmarterASP's server directly by IP with the real host name:
    ```
-   .\compare-apis.ps1 -NewUrl "https://xxxx.smartasp.net"
+   .\compare-apis.ps1 -NewUrl "http://208.98.35.67" -NewHostHeader "api.homeweatherhub.com"
    ```
    It must report 0 differences. (SmartASP won't receive station readings yet, so `Current` may be a few
    minutes behind; that's expected until the switch.)
@@ -68,7 +75,8 @@ Files in this folder:
 
 1. `.\migrate-data.ps1 -Mode Delta` brings SmartASP up to date with readings since the rehearsal.
 2. Run `compare-apis.ps1` again (0 differences).
-3. **Switch DNS**: point `api.homeweatherhub.com` at SmartASP. Stations start posting there within minutes
+3. **Switch DNS** (in Conetix's DNS): change the A records for `api.homeweatherhub.com` and `homeweatherhub.com`
+   to `208.98.35.67` (`www` follows as a CNAME). Make sure HTTPS is ready (see section A). Stations start posting there within minutes
    (the TTL); some posts may still reach Conetix while DNS spreads. They're saved there and copied in step 5.
 4. Check SmartASP is receiving readings: `Current` in the app shows a reading from the last minute,
    and `WSReport` on SmartASP has new rows.
@@ -84,6 +92,9 @@ and are copied across in step 5.
 - [ ] Watch for a week: readings arriving, History and charts correct, `WSData` free of new errors.
 - [ ] After about 7 days, confirm the clean-up ran: the oldest per-entry reading on SmartASP is about 7 days old,
       and `WSData` has no "maintenance" errors.
+- [ ] **Move DNS hosting off Conetix before cancelling it.** The domain's DNS servers (`ns1/ns2.homeweatherhub.com`)
+      are Conetix's; if Conetix is cancelled first, the domain stops resolving entirely. Move the DNS records to the
+      domain registrar or to SmarterASP (change the nameservers at the registrar), and wait 48 h.
 - [ ] Keep Conetix running (untouched) for at least 30 days as the fallback, then cancel it when you're happy.
 - [ ] Change the old `storrs` password (shared with your other projects) when convenient. Home Weather Hub
       no longer uses it.

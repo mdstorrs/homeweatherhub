@@ -1,109 +1,72 @@
+import { getJson, setStationId } from "./main.js";
 
-import { baseUrl } from "./main.js";
-
-checkParams();
-
-function checkParams() {
-
-  const urlParams = new URLSearchParams(window.location.search);
-
-  const paramId = urlParams.get('id');
-
-  if (paramId) {
-    showCurrent(paramId);
-    return;
-  }
-
+// A link like index.html?id=1 goes straight to that station.
+const linkedId = new URLSearchParams(window.location.search).get("id");
+if (linkedId && /^\d+$/.test(linkedId)) {
+  showCurrent(linkedId);
+} else {
   renderStations();
-
-}
-
-async function renderStations() {
-
-  const stationListDiv = await document.querySelector('.js-station-list');
-
-  if (!stationListDiv) { return; }
-
-  const data = await getStationList();
-
-  //make sure there is data here and there were no errros
-  if (data.success && data.stations) {
-
-    const stations = data.stations;
-
-    for (const station of stations) {
-      // Create a button element to convert to a html string later
-      const button = document.createElement("button");
-      button.className = "main-menu-button";
-      button.dataset.id = station.id; // Store ID in data-id attribute
-      button.innerHTML = `<h2>${station.name}</h2><p>${station.address}</p><h4>${station.coordinates}</h4>`;
-  
-      // Attach event listener to call the function with the station ID
-      button.addEventListener("click", function () {
-        showCurrent(this.dataset.id); // Call your function with the stored ID
-      });
-
-      //append object to div
-      stationListDiv.appendChild(button);
-
-    }
-  } else if (!data.success && data.error) {
-    stationListDiv.innerHTML = `<p>${data.error}</p>`;
-  }
-
 }
 
 function showCurrent(id) {
-  localStorage.setItem('id', id);
+  setStationId(id);
   window.location.href = `current.html?id=${id}`;
 }
 
-async function getStationList() {
-
-  //this filter can be used to filter by name set to a space for now.
-  const filter = "";
-  const page = 0;
-  const stationsPerPage = 0;
-
-  const url = `${baseUrl}Stations/${page}/${stationsPerPage}/${filter}`; 
-
-  try {
-      const response = await fetch(url, {
-          method: "GET",
-          headers: {
-              "Content-Type": "application/json"
-          }
-      });
-
-      if (!response.ok) {
-          throw new Error(`HTTP Error. Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      //console.log(result);
-
-      return result;
-
-  } catch (ex) {
-      const result = {
-        error: ex.message,
-        success: false,
-        message: "Error",
-        stations: [],
-        totalPages: 1,
-        totalCount: 0
-      };
-      //document.getElementById("response").innerText = `{error: ${error.message}}`;
-      return result;
-  }
-
+function message(listDiv, text, isError) {
+  listDiv.replaceChildren();
+  const p = document.createElement("p");
+  p.textContent = text;
+  if (isError) p.className = "cs-error";
+  listDiv.appendChild(p);
 }
 
-import { updateMenuLinks } from './main.js';
+async function renderStations() {
+  const listDiv = document.querySelector(".js-station-list");
+  if (!listDiv) return;
 
-// Call updateMenuLinks when the page loads
-updateMenuLinks();
+  message(listDiv, "Loading stations...");
 
-// Optionally, you can call updateMenuLinks when localStorage changes
-window.addEventListener('storage', updateMenuLinks);
+  // Page 1, up to 100 stations (the API returns 10 when no page size is given).
+  const data = await getJson("Stations/1/100/");
+
+  if (!data.success && data.error) {
+    message(listDiv, data.error, true);
+    return;
+  }
+
+  const stations = data.stations ?? [];
+  if (stations.length === 0) {
+    message(listDiv, "No weather stations found.");
+    return;
+  }
+
+  listDiv.replaceChildren();
+  for (const station of stations) {
+    // Built with textContent, never innerHTML: station names will be entered by users.
+    const button = document.createElement("button");
+    button.className = "main-menu-button";
+    button.type = "button";
+
+    const name = document.createElement("h2");
+    name.textContent = station.name || "Weather station";
+    button.appendChild(name);
+
+    if (station.address && station.address.replace(/[\s,]/g, "") !== "") {
+      const address = document.createElement("p");
+      address.textContent = station.address;
+      button.appendChild(address);
+    }
+
+    // Hide placeholder coordinates such as "0, 0" or ", ".
+    const coordinates = (station.coordinates ?? "").trim();
+    if (coordinates && !/^[\s,0.-]*$/.test(coordinates)) {
+      const coords = document.createElement("h4");
+      coords.textContent = coordinates;
+      button.appendChild(coords);
+    }
+
+    button.addEventListener("click", () => showCurrent(station.id));
+    listDiv.appendChild(button);
+  }
+}

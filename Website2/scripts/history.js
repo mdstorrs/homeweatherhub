@@ -1,346 +1,147 @@
-import { baseUrl } from "./main.js";
+import { getJson, escapeHtml, getStationId, getMetric, setTitle } from "./main.js";
 
-startUp();
+// Periods, in the same order as the dropdown. The API's report type is index + 1.
+const PERIODS = ["Day", "Week", "Month", "Year", "All"];
 
-const params = getParams();
+const stationId = getStationId();
+const container = document.querySelector(".js-station-history");
+const combo = document.getElementById("historyCombo");
+const leftButton = document.getElementById("leftButton");
+const rightButton = document.getElementById("rightButton");
 
-renderHistoryReport();
+// Period and offset come from the address (so refresh and Back keep them): history.html?id=1&mode=2&offset=3
+const query = new URLSearchParams(window.location.search);
+const state = {
+  mode: clampInt(query.get("mode"), 0, PERIODS.length - 1, 0),
+  offset: clampInt(query.get("offset"), 0, 100000, 0) // 0 = the current period, 1 = the one before, ...
+};
 
-async function startUp() {
+let stationName = "Weather Station";
+let shown = {};        // the report currently on screen
+let requestNumber = 0; // only the latest request may update the page
 
-    const stationCurrentDiv = await document.querySelector('.js-station-history');
-    const stationNameLabel = await document.querySelector('.js-station-name');
+if (!stationId) {
+  window.location.replace("index.html"); // no station chosen yet
+} else {
+  combo.value = String(state.mode);
 
-    let reportData = "";
-    const data = {}
+  leftButton.addEventListener("click", () => { state.offset++; load(); });
+  rightButton.addEventListener("click", () => { if (state.offset > 0) { state.offset--; load(); } });
+  combo.addEventListener("change", () => { state.mode = parseInt(combo.value, 10); state.offset = 0; load(); });
 
-    reportData += await fillSections(data, "Please wait...", "Loading");
-
-    stationCurrentDiv.innerHTML = reportData;
-
+  load();
 }
 
-async function renderHistoryReport() 
-{
-    const stationCurrentDiv = await document.querySelector('.js-station-history');
-    const stationNameLabel = await document.querySelector('.js-station-name');
-
-    //make sure we have some sort of params
-    if (!params || params.success === false) {
-        window.location.href = 'index.html';
-        return;
-    }
-
-    let stationName = "Weather Station";
-
-    if (!stationCurrentDiv || !stationNameLabel) {
-        return;
-    }
-
-    const dateRange = getDateRange(params); //Read the params from the request and calulate the date range
-
-    //Get the data from the server
-    const data = await getHistoryReport(dateRange);
-
-    //Check for no data
-
-    let reportData = "";
-
-    //make sure there is data here and there were no errros
-    if (data.success) {
-
-        stationName = data.wsName;
-
-        if (data.success && data.measurementSymbol == null) {
-            dateRange.label = "No Report Data";
-        }
-
-        reportData += await fillSections(data, dateRange.label, stationName);
-    
-    }
-
-    if (!data.success && data.error) {
-        stationNameLabel.innerHTML = data.error;
-    } else if (!data.success) {
-        stationNameLabel.innerHTML = data.message;
-    } else {
-        //stationNameLabel.innerHTML = stationName;
-        stationCurrentDiv.innerHTML = reportData;
-    }
-
+function clampInt(text, min, max, fallback) {
+  const n = parseInt(text, 10);
+  return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
 }
 
-async function fillSections(data, label, stationName) {
+async function load() {
+  const range = getDateRange(state.mode, state.offset);
+  const thisRequest = ++requestNumber;
 
-    let reportData = "";
+  // Keep the address in step, so refreshing or sharing the link shows the same period.
+  history.replaceState(null, "", `history.html?id=${stationId}&mode=${state.mode}&offset=${state.offset}`);
 
-    reportData += await renderDataSection(
-        "TEMP", "MIN", "MAX",
-        [
-            { desc: "OUTSIDE", min: `${data.outsideTemperatureMin || ''}`, max: `${data.outsideTemperatureMax || ''}` },
-            { desc: "INSIDE", min: `${data.insideTemperatureMin || ''}`, max: `${data.insideTemperatureMax || ''}` },
-        ],
-        label, stationName);
+  rightButton.disabled = state.offset === 0 || state.mode === 4; // can't go past today; "All" has no pages
+  leftButton.disabled = state.mode === 4;
 
-    reportData += await renderDataSection(
-        "RAIN", "", "MAX",
-        [
-            { desc: "ACCUM", min: ``, max: `${data.totalRain || ''}` },
-            { desc: "RATE", min: ``, max: `${data.rainRateMax || ''}` },
-        ],
-        null, null);
+  // While loading, the previous numbers stay (dimmed) under the new period's name, so the page doesn't flicker.
+  container.classList.add("cs-loading");
+  render(shown, range.label, "Loading...");
 
-    reportData += await renderDataSection(
-        "WIND", "", "MAX",
-        [
-            { desc: "MAX. SPEED", min: ``, max: `${data.windSpeedMax || ''}` },
-            { desc: "MAX. GUST", min: ``, max: `${data.windGustMax || ''}` },
-            { desc: "AVG DIRECTION", min: ``, max: `${data.windDirectionAvg || ''}` },
-        ],
-        null, null);
+  const data = await getJson(`History/${stationId}/${state.mode + 1}/${toApiDate(range.fromDate)}/${getMetric()}/`);
+  if (thisRequest !== requestNumber) return; // the user has already moved to another period
+  container.classList.remove("cs-loading");
 
-    reportData += await renderDataSection(
-        "HUMIDITY", "MIN", "MAX",
-        [
-            { desc: "OUTSIDE", min: `${data.outsideHumidityMin || ''}`, max: `${data.outsideHumidityMax || ''}` },
-            { desc: "INSIDE", min: `${data.insideHumidityMin || ''}`, max: `${data.insideHumidityMax || ''}` },
-        ],
-        "", null);
-
-    reportData += await renderDataSection(
-        "MISC", "MIN", "MAX",
-        [
-            { desc: "PRESSURE", min: `${data.pressureMin || ''}`, max: `${data.pressureMax || ''}` },
-            { desc: "UV INDEX", min: ``, max: `${data.uvIndexMax || ''}` },
-        ],
-        "", null);
-
-    return reportData;
-
-}
-
-function getDateRange(params) {
-
-    const now = new Date(); //This is the date and time
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    let fromDate = new Date(today); //default start date. eg. Todays date as date only 2025/03/11 00:00:00 at minight
-    let toDate = new Date(today); //default end date. eg. Todays date. We will add later. eg 1 day. 2025/03/12 00:00:00
-    let label = "Today";
-
-    switch (params.mode)
-    {
-        case 1: //7 Days
-            const subtractDays = (params.offset * 7); 
-            today.setDate(today.getDate() - subtractDays);
-            console.log(today.toLocaleDateString());
-            fromDate = GetWSWeek(today);
-            toDate.setDate(fromDate.getDate() + 6);
-            //= $"{this.FromDate.ToShortDateString()} to {this.ToDate.AddDays(-1).ToShortDateString()}";
-            label = `${fromDate.toLocaleDateString()} to ${toDate.toLocaleDateString()}`;
-            console.log(label);
-            break;
-        case 2: //Month
-            fromDate = new Date(today.getFullYear(), today.getMonth() - params.offset, 1);
-            toDate = new Date(today.getFullYear(), today.getMonth() - params.offset + 1, 1); 
-            label = fromDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-            break;
-        case 3: //year
-            fromDate = new Date(today.getFullYear() - params.offset, 0, 1);
-            toDate = new Date(today.getFullYear() - params.offset + 1, 0, 1); 
-            label = today.getFullYear() - params.offset;
-            break;
-        case 4: //All
-            fromDate = new Date(2000, 0, 1 ,0,0,0);
-            toDate.setDate(today.getDate() + 1);
-            label = "All Time";
-            break;
-        default: //Day or any errors
-            fromDate.setDate(today.getDate() -(params.offset));
-            toDate.setDate(today.getDate() -(params.offset) + 1); //DateTime.Now.Date.AddDays(-(params.offset) + 1);
-            if (params.offset == 0)
-                label = "Today";
-            else if (params.offset == 1)
-                label = "Yesterday";
-            else
-                label = `${fromDate.toLocaleDateString()}`;
-                //label = `${fromDate.toLocaleDateString()} to ${toDate.toLocaleDateString()}`;
-            break;
-    }
-
-    return { 
-        mode: params.mode + 1,
-        offset: params.offset,
-        fromDate: fromDate,
-        toDate: toDate,
-        label: label,
-    }; 
-
-}
-
-function GetWSWeek(dateInput) {
-    const date = new Date(dateInput);
-    const day = date.getDay(); // 0 (Sun) - 6 (Sat)
-  
-    // Calculate difference from Monday
-    const diffToMonday = (day === 0 ? -6 : 1) - day;
-  
-    // Clone date for start and end
-    const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() + diffToMonday);
-    weekStart.setHours(0, 0, 0, 0);
-
-    /*
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-    */
-
-    console.log(weekStart);
-  
-    return weekStart;
+  if (!data.success) {
+    shown = {};
+    render(shown, range.label, data.error || data.message || "Unable to load history.");
+    return;
   }
 
-function getParams() {
-
-    const urlParams = new URLSearchParams(window.location.search);
-
-    const paramId = urlParams.get('id');
-    const paramMode = urlParams.get('mode');
-    const paramOffset = urlParams.get('offset');
-
-    //Get local storage ID.
-    let id = 0; 
-    let mode = 0; 
-    let offset = 0;
-
-    if (!paramId) 
-        return { success: false, id: 1, mode: 0, offset: 0 }; 
-    else {
-        id = paramId;
-        localStorage.setItem("id", id);
-    }
-
-    if (!paramMode)
-        mode = 0;
-    else
-        mode = paramMode;
-
-    if (!paramOffset)
-        offset = 0; 
-    else
-        offset = paramOffset;
-
-    if (!id) return { success: false, id: 1, mode: 0, offset: 0 } 
-
-    if (!mode)
-        mode = 0;
-
-    if (!offset) 
-        offset = 0;
-
-    return { success: true, id: id, mode: mode, offset: offset } 
-
+  stationName = data.wsName || stationName;
+  setTitle(data.wsName);
+  shown = data;
+  // A station with no readings in the period comes back without a measurement symbol.
+  render(shown, range.label, data.measurementSymbol == null ? "No data for this period." : null);
 }
 
-async function renderDataSection(title, titleMin, titleMax, dataLines, specialHeader, stationName) {
-    let data = `<div class="cs-section-div">`;
-    data += `<div class="section-data">`;
-
-    if (stationName) {
-        data += `<h2 class="js-station-name">${stationName}</h2>`;
-    }
-
-    if (specialHeader) {
-        data += `<h3>${specialHeader}</h3>`;
-    }
-
-    data += `<div class="data-line">
-        <span class="section-header-line">${title}</span><span class="section-header-line-right">${titleMin}</span></span><span class="section-header-line-right">${titleMax}</span>
-    </div>`;
-
-    for (const dataline of dataLines) {
-        const line = `<div class="data-line"><span class="label">${dataline.desc}</span><span class="value">${dataline.min}</span><span class="value">${dataline.max}</span></div>`;
-        data += line;
-    }
-
-    //Close it off
-    data += `</div></div>`;
-
-    return data;
+function toApiDate(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-async function getHistoryReport(dataRange) {
-    //this filter can be used to filter by name set to a space for now.
-    try {
+function getDateRange(mode, offset) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const dateString = `${dataRange.fromDate.getFullYear()}-${dataRange.fromDate.getMonth() + 1}-${dataRange.fromDate.getDate()}`;
-
-        if (!params || !params.id) {
-            throw new Error(`Invalid Station ID`);
-        }
-
-        const metric = localStorage.getItem("metric") || '1';
-
-        const url = `${baseUrl}History/${params.id}/${dataRange.mode}/${dateString}/${metric}/`;
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        return result;
-
-    } catch (ex) {
-        const result = {
-            error: ex.message,
-            success: false,
-            message: "Error",
-            lastUpdateTime: new Date
-        };
-        return result;
+  switch (mode) {
+    case 1: { // Week, Monday to Sunday
+      const from = new Date(today);
+      const daysSinceMonday = (today.getDay() + 6) % 7;
+      from.setDate(today.getDate() - daysSinceMonday - offset * 7);
+      const to = new Date(from);
+      to.setDate(from.getDate() + 6);
+      const thisWeek = offset === 0 ? "This Week" : offset === 1 ? "Last Week" : null;
+      const dates = `${from.toLocaleDateString()} to ${to.toLocaleDateString()}`;
+      return { fromDate: from, label: thisWeek ? `${thisWeek} (${dates})` : dates };
     }
+    case 2: { // Month
+      const from = new Date(today.getFullYear(), today.getMonth() - offset, 1);
+      return { fromDate: from, label: from.toLocaleDateString(undefined, { month: "long", year: "numeric" }) };
+    }
+    case 3: { // Year
+      const from = new Date(today.getFullYear() - offset, 0, 1);
+      return { fromDate: from, label: String(from.getFullYear()) };
+    }
+    case 4: // All
+      return { fromDate: today, label: "All Time" };
+    default: { // Day
+      const from = new Date(today);
+      from.setDate(today.getDate() - offset);
+      const label = offset === 0 ? "Today" : offset === 1 ? "Yesterday" : from.toLocaleDateString();
+      return { fromDate: from, label };
+    }
+  }
 }
 
-import { updateMenuLinks } from './main.js';
+// ?? rather than ||, so a genuine 0 (e.g. UV index 0) is shown instead of a blank.
+function value(v) {
+  return escapeHtml(v ?? "");
+}
 
-// Call updateMenuLinks when the page loads
-updateMenuLinks();
+function render(d, label, status) {
+  let html = section("TEMP", "MIN", "MAX", [
+    ["OUTSIDE", d.outsideTemperatureMin, d.outsideTemperatureMax],
+    ["INSIDE", d.insideTemperatureMin, d.insideTemperatureMax]
+  ], label, status);
+  html += section("RAIN", "", "MAX", [["ACCUM", null, d.totalRain], ["RATE", null, d.rainRateMax]]);
+  html += section("WIND", "", "MAX", [
+    ["MAX. SPEED", null, d.windSpeedMax], ["MAX. GUST", null, d.windGustMax], ["AVG DIRECTION", null, d.windDirectionAvg]
+  ]);
+  html += section("HUMIDITY", "MIN", "MAX", [
+    ["OUTSIDE", d.outsideHumidityMin, d.outsideHumidityMax],
+    ["INSIDE", d.insideHumidityMin, d.insideHumidityMax]
+  ]);
+  html += section("MISC", "MIN", "MAX", [["PRESSURE", d.pressureMin, d.pressureMax], ["UV INDEX", null, d.uvIndexMax]]);
+  container.innerHTML = html;
+}
 
-// Optionally, you can call updateMenuLinks when localStorage changes
-window.addEventListener('storage', updateMenuLinks);
-
-document.getElementById("leftButton").addEventListener("click", function() {
-    if (!params) return;
-    if (!params.offset) {
-        params.offset = 1; }
-    else { 
-        params.offset++; }
-    params.mode = parseInt(document.getElementById("historyCombo").value, 10);
-    renderHistoryReport();
-});
-
-document.getElementById("rightButton").addEventListener("click", function() {
-    if (!params) return;
-    if (!params.offset || params.offset == 0) {
-        params.offset = 0; }
-    else {
-        params.offset--; }
-    params.mode = parseInt(document.getElementById("historyCombo").value, 10);
-    renderHistoryReport();
-});
-
-document.getElementById("historyCombo").addEventListener("change", function(){
-    if (!params) return;
-    params.offset = 0;
-    params.mode = parseInt(document.getElementById("historyCombo").value, 10);
-    renderHistoryReport();
-});
+// The first section also carries the station name, the period and any status message.
+function section(title, minTitle, maxTitle, rows, label, status) {
+  let html = `<div class="cs-section-div"><div class="section-data">`;
+  if (label !== undefined) {
+    html += `<h2 class="js-station-name">${escapeHtml(stationName)}</h2>`;
+    html += `<h3>${escapeHtml(label)}</h3>`;
+    if (status) html += `<p class="${status === "Loading..." ? "cs-muted" : "cs-error"}">${escapeHtml(status)}</p>`;
+  }
+  html += `<div class="data-line"><span class="section-header-line">${title}</span>` +
+          `<span class="section-header-line-right">${minTitle}</span><span class="section-header-line-right">${maxTitle}</span></div>`;
+  for (const [rowLabel, min, max] of rows) {
+    html += `<div class="data-line"><span class="label">${rowLabel}</span>` +
+            `<span class="value">${value(min)}</span><span class="value">${value(max)}</span></div>`;
+  }
+  return html + `</div></div>`;
+}

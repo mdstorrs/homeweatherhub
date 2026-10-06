@@ -73,7 +73,8 @@ h3 {
 
 h4 {
   color: var(--light-forecolor);
-  font-size: 7pt;
+  font-size: 0.8rem;
+  font-weight: normal;
 }
 
 
@@ -165,7 +166,7 @@ p {
 }
 
 .cs-history-button {
-  max-width: 200;
+  max-width: 200px;
   height: 40px;
   width: 20%;
   margin: 0px;
@@ -178,6 +179,38 @@ p {
 
 .cs-button:active {
   background-color: var(--button-color-active);
+}
+
+.cs-button:disabled,
+.cs-button:disabled:hover {
+  opacity: 0.4;
+  cursor: default;
+  color: white;
+}
+
+/* Status messages */
+.cs-error {
+  color: var(--error);
+}
+
+.cs-muted {
+  color: var(--light-forecolor);
+}
+
+.cs-notice {
+  color: var(--secondary-forecolor);
+  margin: 10px auto;
+}
+
+/* Station hasn't reported for a while */
+.cs-offline {
+  color: var(--error);
+}
+
+/* History: previous numbers stay visible, dimmed, while the next period loads */
+.cs-loading .value {
+  opacity: 0.35;
+  transition: opacity 0.2s;
 }
 
 .cs-history-combo {
@@ -381,6 +414,14 @@ p {
 
 .toggle-option:hover {
   background-color: #e0e0e0;
+}
+
+.toggle-option.selected:hover {
+  background-color: var(--button-color-active);
+}
+
+.cs-account-input:disabled {
+  opacity: 0.5;
 }
 
 .cs-account-form {

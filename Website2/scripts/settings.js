@@ -1,36 +1,20 @@
+import { getMetric, setMetric } from "./main.js";
 
-function LoadSettings() {
+const celsiusButton = document.getElementById("celsius");
+const fahrenheitButton = document.getElementById("fahrenheit");
+const selectedUnitDisplay = document.getElementById("selected-unit");
 
-  let metric = localStorage.getItem('metric');
-
-  if (metric == 0) {
-    selectUnit(0);
-  }
-  else {
-    selectUnit(1);
-  }
-
+function show(metric) {
+  celsiusButton.classList.toggle("selected", metric === 1);
+  fahrenheitButton.classList.toggle("selected", metric === 0);
+  selectedUnitDisplay.textContent = metric === 1 ? "Metric System Selected" : "Freedom Units Selected";
 }
 
 function selectUnit(metric) {
-
-  const celsiusButton = document.getElementById('celsius');
-  const fahrenheitButton = document.getElementById('fahrenheit');
-  const selectedUnitDisplay = document.getElementById('selected-unit');
-
-  if (metric == 1) {
-    celsiusButton.classList.add('selected');
-    fahrenheitButton.classList.remove('selected');
-    selectedUnitDisplay.textContent = 'Metric System Selected';
-    localStorage.setItem('metric', 1);
-  } else {
-    fahrenheitButton.classList.add('selected');
-    celsiusButton.classList.remove('selected');
-    selectedUnitDisplay.textContent = 'Freedom Units Selected';
-    localStorage.setItem('metric', 0);
-  }
-
+  setMetric(metric);
+  show(metric);
 }
 
-LoadSettings();
-
+celsiusButton.addEventListener("click", () => selectUnit(1));
+fahrenheitButton.addEventListener("click", () => selectUnit(0));
+show(getMetric());

@@ -1,243 +1,127 @@
-import { baseUrl } from "./main.js";
+import { getJson, escapeHtml, getStationId, getMetric, setTitle } from "./main.js";
 
-let previousUpdateTime = new Date; // Initialize to null
+// Stations post every 30-60 seconds, so checking more often only adds load.
+const REFRESH_MS = 30000;
+// A reading older than this means the station is offline.
+const OFFLINE_AFTER_SECONDS = 300;
 
-const params = getParams();
+const stationId = getStationId();
+const container = document.querySelector(".js-station-current");
 
-renderCurrentReport();
-setInterval(renderCurrentReport, 5000); // Refresh every 5 seconds
+let lastData = null;      // last successful response, kept on screen if a refresh fails
+let fetchedAt = 0;        // when lastData arrived (browser clock)
+let refreshTimer = null;
+let ageTimer = null;
+let loading = false;
 
-async function renderCurrentReport() {
-
-    const stationCurrentDiv = await document.querySelector('.js-station-current');
-    const stationNameLabel = await document.querySelector('.js-station-name');
-    const statusLabel = await document.querySelector('.js-status-label');
-    const lastUpdateLabel = await document.querySelector('.js-last-updated');
-
-    //let id = localStorage.getItem('id');
-    let metric = localStorage.getItem('metric');
-
-    if (metric == null) 
-        metric = 1;
-
-    if (!params || params.success==false) {
-        //window.location.href = 'index.html';
-        console.log(params);
-        return;
-    } else {
-        localStorage.setItem("id", params.id);
-    }
-
-    let stationName = "Weather Station";
-
-    if (!stationCurrentDiv || !stationNameLabel) {
-        return;
-    }
-
-    //Get the data from the server
-    const data = await getCurrentReport(params.id, metric);
-
-    let currentData = "";
-    let lastUpdate = { refreshNeeded: true, timeString: "...", online: false};
-
-    //make sure there is data here and there were no errros
-    if (data.success) {
-
-        lastUpdate = getTimeSinceLastUpdate(data.lastUpdated, data.serverTime, previousUpdateTime);
-
-        if (lastUpdate.refreshNeeded) {
-
-            stationName = data.wsName;
-
-            currentData = `
-                    <div class="cs-section-div">
-                        <h2 class="js-station-name">${stationName}</h2>
-                        <h3>Current Contitions</h3>
-                        <h4 class="js-last-updated" id="lastUpdatedHeader">${lastUpdate.timeString}</h4>
-                        <p><span class="cs-temp">${data.tempOutside}</span><span class="cs-temp-symbol">°</span><span class="cs-temp-unit">${data.measurementSymbol}</span></p>
-                        <p>Humidity ${data.humidityOutside}</p>
-                    </div>
-            `;
-
-            currentData += await renderDataSection(
-                "RAIN", "",
-                [
-                    { desc: "ACCUM", value: `${data.rainAccumulation}` },
-                    { desc: "RATE", value: `${data.rainRate}` },
-                ]);
-
-            currentData += await renderDataSection(
-                "WIND", "",
-                [
-                    { desc: "DIRECTION", value: `${data.windDirection}` },
-                    { desc: "SPEED", value: `${data.windSpeed}` },
-                    { desc: "GUSTS", value: `${data.windGust}` },
-                ]);
-
-            currentData += await renderDataSection(
-                "INSIDE", "",
-                [
-                    { desc: "TEMP", value: `${data.tempInside}` },
-                    { desc: "HUMIDITY", value: `${data.humidityInside}` },
-                ]);
-
-            currentData += await renderDataSection(
-                "MISC", "",
-                [
-                    { desc: "PRESSUE", value: `${data.pressure}` },
-                    { desc: "UV INDEX", value: `${data.uvIndex}` },
-                ]);
-
-        }
-
-        previousUpdateTime = data.lastUpdated;
-
-    }
-
-    const header = document.getElementById("lastUpdatedHeader");
-
-    //If the station is offline set the last updated label to red
-    if (lastUpdate && lastUpdate.online === false) {
-        if (header) 
-            header.style.color = "var(--error)";        
-    }
-
-    //I don't know if this is needed, but only update the objects if there is new data.
-    if (lastUpdate.refreshNeeded) {
-        if (!data.success && data.error) {
-            statusLabel.innerHTML = data.error;
-        } else if (!data.success) {
-            statusLabel.innerHTML = data.message;
-        } else {
-            stationNameLabel.innerHTML = stationName;
-            stationCurrentDiv.innerHTML = currentData;
-        }
-    } else {
-        lastUpdateLabel.innerHTML = lastUpdate.timeString;
-    }
-
+if (!stationId) {
+  window.location.replace("index.html"); // no station chosen yet
+} else {
+  document.getElementById("historyButton")?.addEventListener("click", () => {
+    window.location.href = `history.html?id=${stationId}`;
+  });
+  start();
+  // Don't poll in a background tab; catch up as soon as it's visible again.
+  document.addEventListener("visibilitychange", () => (document.hidden ? stop() : start()));
 }
 
-async function renderDataSection(title, titleVal, dataLines) {
-    let data = `<div class="cs-section-div"><div class="section-data">`;
-
-    //Data section titel
-    data += `<div class="data-line"><span class="section-header-line">${title}</span><span class="section-header-line-right">${titleVal}</span></div>`;
-
-    for (const dataline of dataLines) {
-        const line = `<div class="data-line"><span class="label">${dataline.desc}</span><span class="value">${dataline.value}</span></div>`;
-        data += line;
-    }
-
-    //Close it off
-    data += `</div></div>`;
-
-    return data;
+function start() {
+  stop();
+  refresh();
+  refreshTimer = setInterval(refresh, REFRESH_MS);
+  ageTimer = setInterval(updateAge, 10000);
 }
 
-async function getCurrentReport(stationId, metric) {
-    //this filter can be used to filter by name set to a space for now.
-    try {
-
-        if (!stationId) {
-            throw new Error(`Invalid Station ID`);
-        }
-
-        const url = `${baseUrl}Current/${stationId}/${metric}/`;
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        return result;
-
-    } catch (ex) {
-        const result = {
-            error: ex.message,
-            success: false,
-            message: "Error",
-            lastUpdateTime: new Date
-        };
-        return result;
-    }
+function stop() {
+  clearInterval(refreshTimer);
+  clearInterval(ageTimer);
 }
 
-function getTimeSinceLastUpdate(lastUpdateTime, serverTime, previousLastUpdateTime) {
+async function refresh() {
+  if (loading) return;
+  loading = true;
+  const data = await getJson(`Current/${stationId}/${getMetric()}/`);
+  loading = false;
 
-    const currentTime = new Date(serverTime);
-    const lastUpdate = new Date(lastUpdateTime);
-    let diffInSeconds = Math.round((currentTime - lastUpdate) / 1000);
-
-    let refreshNeeded = false; //use this if we do not need to refresh
-    let timeString; //the return string for display
-    let online = false;
-
-    if (previousLastUpdateTime && lastUpdateTime !== previousLastUpdateTime) {
-        refreshNeeded = true;
-    }
-
-    if (diffInSeconds < 60) {
-        timeString = `Online (Updated ${diffInSeconds} seconds ago)`;
-        online = true;
-    } else if (diffInSeconds < 300) {
-        const minutes = Math.floor(diffInSeconds / 60);
-        timeString = `Online (Updated ${minutes} minutes ago)`;
-        online = true;
-    } else if (diffInSeconds < 3600) {
-        const minutes = Math.floor(diffInSeconds / 60);
-        timeString = `Offline (Updated ${minutes} minutes ago)`;
-    } else {
-        const hours = Math.floor(diffInSeconds / 3600);
-        timeString = `Offline (Updated ${hours} hours ago)`;
-    }
-
-    return {
-        timeString: timeString,
-        refreshNeeded: refreshNeeded,
-        online: online,
-    };
-
+  if (data.success) {
+    lastData = data;
+    fetchedAt = Date.now();
+    render(null);
+  } else {
+    render(data.error || data.message || "Unable to load current conditions.");
+  }
 }
 
-function getParams() {
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramId = urlParams.get('id');
-
-    //Get local storage ID.
-    let id = 0; 
-
-    if (!paramId)
-        id = localStorage.getItem('id');
-    else
-        id = paramId;
-
-    if (!id) return { success: false, id: 1 } 
-
-    return { success: true, id: id } 
-
+// Seconds since the station's last reading. Both times come from the server's clock, so the phone's
+// time zone doesn't matter; the time since we fetched is added so the text keeps ticking between refreshes.
+function ageSeconds() {
+  const serverTime = new Date(lastData.serverTime);
+  const lastUpdated = new Date(lastData.lastUpdated);
+  if (isNaN(serverTime) || isNaN(lastUpdated)) return null;
+  return Math.max(0, Math.round((serverTime - lastUpdated + (Date.now() - fetchedAt)) / 1000));
 }
 
-//Click event for hisotyr button at the bottom
-document.getElementById("historyButton").addEventListener("click", function() {
-    if (params.id) {
-        window.location.href = `history.html?id=${params.id}`;
-    }
-});
+function describeAge(seconds) {
+  if (seconds === null) return { text: "", online: true };
+  const online = seconds < OFFLINE_AFTER_SECONDS;
+  let ago;
+  if (seconds < 60) ago = `${seconds} seconds ago`;
+  else if (seconds < 3600) ago = `${Math.floor(seconds / 60)} minute${seconds < 120 ? "" : "s"} ago`;
+  else if (seconds < 172800) ago = `${Math.floor(seconds / 3600)} hour${seconds < 7200 ? "" : "s"} ago`;
+  else ago = `${Math.floor(seconds / 86400)} days ago`;
+  return { text: `${online ? "Online" : "Offline"} (updated ${ago})`, online };
+}
 
-// Optionally, you can call updateMenuLinks when localStorage changes
-window.addEventListener('storage', updateMenuLinks);
+function updateAge() {
+  const header = document.getElementById("lastUpdatedHeader");
+  if (!header || !lastData) return;
+  const age = describeAge(ageSeconds());
+  header.textContent = age.text;
+  header.classList.toggle("cs-offline", !age.online);
+}
 
-import { updateMenuLinks } from './main.js';
+function render(error) {
+  if (!container) return;
 
-// Call updateMenuLinks when the page loads
-updateMenuLinks();
+  if (!lastData) {
+    // Nothing to show yet: just the error (the page retries automatically).
+    container.innerHTML = `
+      <div class="cs-section-div">
+        <h2 class="js-station-name">Weather Station</h2>
+        <h3 class="cs-error">${escapeHtml(error)}</h3>
+        <h4>Retrying automatically...</h4>
+      </div>`;
+    return;
+  }
+
+  const d = lastData;
+  setTitle(d.wsName);
+  const age = describeAge(ageSeconds());
+
+  let html = `
+    <div class="cs-section-div">
+      <h2 class="js-station-name">${escapeHtml(d.wsName)}</h2>
+      <h3>Current Conditions</h3>
+      <h4 class="js-last-updated${age.online ? "" : " cs-offline"}" id="lastUpdatedHeader">${escapeHtml(age.text)}</h4>
+      ${error ? `<p class="cs-error">${escapeHtml(error)} Showing the last reading.</p>` : ""}
+      <p><span class="cs-temp">${escapeHtml(d.tempOutside)}</span><span class="cs-temp-symbol">°</span><span class="cs-temp-unit">${escapeHtml(d.measurementSymbol)}</span></p>
+      <p>Humidity ${escapeHtml(d.humidityOutside)}</p>
+    </div>`;
+
+  html += section("RAIN", [["ACCUM", d.rainAccumulation], ["RATE", d.rainRate]]);
+  html += section("WIND", [["DIRECTION", d.windDirection], ["SPEED", d.windSpeed], ["GUSTS", d.windGust]]);
+  const unit = d.measurementSymbol ? ` °${d.measurementSymbol}` : "";
+  html += section("INSIDE", [["TEMP", d.tempInside != null ? `${d.tempInside}${unit}` : null], ["HUMIDITY", d.humidityInside]]);
+  html += section("MISC", [["PRESSURE", d.pressure], ["UV INDEX", d.uvIndex]]);
+
+  container.innerHTML = html;
+}
+
+function section(title, rows) {
+  let html = `<div class="cs-section-div"><div class="section-data">`;
+  html += `<div class="data-line"><span class="section-header-line">${title}</span><span class="section-header-line-right"></span></div>`;
+  for (const [label, value] of rows) {
+    html += `<div class="data-line"><span class="label">${label}</span><span class="value">${escapeHtml(value ?? "-")}</span></div>`;
+  }
+  return html + `</div></div>`;
+}
