@@ -33,10 +33,15 @@ Files in this folder:
       SmarterASP: main site `mdstorrs-001-site7` (temp URL https://mdstorrs-001-site7.ftempurl.com/),
       API subsite `mdstorrs-001-subsite8`, both on **`208.98.35.67`**.
       **At least 24 h before the switch, lower the TTL** of those records to 300 s in Conetix's DNS (Plesk).
-- [ ] **HTTPS for `api.homeweatherhub.com` on SmarterASP**: the app and website call `https://`, so a certificate
-      must be ready at the switch. Either export the current certificate (with private key) from Conetix Plesk and
-      import it into SmarterASP beforehand (no gap), or issue SmarterASP's free certificate right after the DNS switch
-      (HTTPS errors in the app/website for a few minutes). Stations post over plain HTTP, so they're unaffected.
+- [ ] **HTTPS on SmarterASP** (the app and website use `https://`; stations post over plain HTTP).
+      SmarterASP's free certificate **can't be issued before the switch**: Let's Encrypt checks
+      `http://<host>/.well-known/acme-challenge/…`, which DNS still sends to Conetix.
+      Instead, reuse Conetix's certificate: a Let's Encrypt **wildcard** for `homeweatherhub.com` + `*.homeweatherhub.com`,
+      valid until **8 Dec 2026**.
+      1. Plesk → Websites & Domains → homeweatherhub.com → SSL/TLS Certificates → download the certificate (.pem with key).
+      2. `openssl pkcs12 -export -in homeweatherhub.pem -inkey homeweatherhub.pem -out homeweatherhub.pfx` (choose a password).
+      3. SmarterASP → install your own certificate (PFX) → bind to site7 (`homeweatherhub.com`, `www`) and subsite8 (`api`).
+      4. Never commit the .pem/.pfx (they contain the private key); delete local copies after upload.
 - [ ] **Website (Website2)**: decide whether it moves to SmartASP too. It only calls the API, so it can move
       before, with, or after the API.
 - [ ] **Old logger on Conetix**: something on the Conetix account is still running an old API build that logs
@@ -92,6 +97,8 @@ and are copied across in step 5.
 - [ ] Watch for a week: readings arriving, History and charts correct, `WSData` free of new errors.
 - [ ] After about 7 days, confirm the clean-up ran: the oldest per-entry reading on SmartASP is about 7 days old,
       and `WSData` has no "maintenance" errors.
+- [ ] **Before 8 Dec 2026: switch both SmarterASP sites to SmarterASP's free certificate** (it validates once DNS
+      points at SmarterASP). The imported Conetix certificate expires then and can't be renewed from the new host.
 - [ ] **Move DNS hosting off Conetix before cancelling it.** The domain's DNS servers (`ns1/ns2.homeweatherhub.com`)
       are Conetix's; if Conetix is cancelled first, the domain stops resolving entirely. Move the DNS records to the
       domain registrar or to SmarterASP (change the nameservers at the registrar), and wait 48 h.

@@ -24,12 +24,17 @@
 #>
 param(
     [Parameter(Mandatory = $true)][ValidateSet("Full", "Delta", "Verify")][string]$Mode,
-    [string]$ConfigFile = (Join-Path $PSScriptRoot "move-config.json"),
-    [string]$StateFile = (Join-Path $PSScriptRoot "move-state.json"),
+    [string]$ConfigFile,
+    [string]$StateFile,
     [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
+
+# $PSScriptRoot can be empty in parameter defaults under Windows PowerShell 5.1, so resolve the defaults here.
+$here = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if (-not $ConfigFile) { $ConfigFile = Join-Path $here "move-config.json" }
+if (-not $StateFile) { $StateFile = Join-Path $here "move-state.json" }
 
 if (-not (Test-Path $ConfigFile)) { throw "Missing $ConfigFile. Copy move-config.example.json to move-config.json and fill it in." }
 $config = Get-Content -Raw $ConfigFile | ConvertFrom-Json
@@ -206,6 +211,10 @@ Add-Check "WSReportHourly (before $($rawFrom.ToString('yyyy-MM-dd')))" (Invoke-S
 # must be on the target. The target may have MORE once it receives posts itself, so "fewer" is the failure.
 # (IDs aren't compared: Delta runs give copied rows new IDs on the target.)
 $lastId = [long]$state.LastReportId
+# Once the target's daily clean-up runs (migration 003) it removes readings older than KeepRawDays (their hourly
+# rollups stay), so only compare from that cutoff onwards.
+$cleanupCutoff = $now.Date.AddDays(-$keepRawDays)
+if ($cleanupCutoff -gt $rawFrom) { $rawFrom = $cleanupCutoff }
 $daysql = "SELECT CONVERT(VARCHAR(10), CAST(DateAdded AS DATE), 120) + ' ' + Passkey AS K, COUNT(*) AS N FROM {0} WITH (NOLOCK) WHERE DateAdded >= @d {1} GROUP BY CAST(DateAdded AS DATE), Passkey"
 $srcDays = Invoke-Rows $src ($daysql -f (Get-QualifiedName $src 'WSReport'), "AND ID <= @id") @{ "@d" = $rawFrom; "@id" = $lastId }
 $dstDays = Invoke-Rows $dst ($daysql -f (Get-QualifiedName $dst 'WSReport'), "") @{ "@d" = $rawFrom }
